@@ -1,3 +1,5 @@
+#include <algorithm>
+
 template <typename Object>
 class LinkedList
 {

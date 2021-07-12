@@ -5,6 +5,7 @@
 
 #include "Constants.hpp"
 #include "SD1306.hpp"
+#include "Thermostat.hpp"
 
 #define OLED_NUM_MENUS 7
 
@@ -32,14 +33,14 @@
 
 class OLED {
 public:
-	OLED();
+	OLED(thermostat_settings* settings, sensor_readings* sensor);
 	~OLED();
 	void update_oled();
-	void isr_button_A();
-	void isr_button_B();
-	void isr_rotary_btn();
-	void isr_rotary();
-	void isr_motion();
+	static void isr_button_A(void* param);
+	static void isr_button_B(void* param);
+	static void isr_rotary_btn(void* param);
+	static void isr_rotary(void* param);
+	static void isr_motion(void* param);
 private:
 	void oled_draw_logo();
 	void clear_oled_buffer();
@@ -55,6 +56,8 @@ private:
 	void update_temporary_setting_value();
 	void bound_scroll_counter(int8_t low, int8_t high, uint8_t height);
 
+	thermostat_settings* m_settings;
+	sensor_readings* m_sensor;
 	int8_t oled_scroll_counter;
 	int8_t oled_menu_state;
 	int8_t oled_menu_item;

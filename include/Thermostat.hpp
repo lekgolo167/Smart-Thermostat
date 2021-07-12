@@ -8,6 +8,24 @@
 
 RTCZero rtc;
 
+struct sensor_readings {
+	float temperature_F;
+	float temperature_C;
+	float average_temperature;
+	float humidity;
+};
+
+struct thermostat_settings {
+	float target_temperature;
+	float lower_threshold;
+	float upper_threshold;
+	float baseline_temperature;
+	uint16_t sample_period_sec;
+	uint16_t screen_timeout_sec;
+	uint16_t motion_timeout_sec;
+	uint8_t total_samples;
+	cycle_t* current_cycle;
+};
 
 class Thermostat {
 public:
@@ -15,17 +33,6 @@ public:
 	void run_cycle();
 
 private:
-	struct thermostat_settings {
-		float target_temperature;
-		float lower_threshold;
-		float upper_threshold;
-		float baseline_temperature;
-		uint16_t sample_period_sec;
-		uint16_t screen_timeout_sec;
-		uint16_t motion_timeout_sec;
-		uint8_t total_samples;
-		cycle_t* current_cycle;
-	};
 
 	void update_cycle();
 	bool check_server_for_updates();

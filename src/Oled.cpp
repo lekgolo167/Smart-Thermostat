@@ -1,6 +1,8 @@
 #include "Oled.h"
 
-OLED::OLED() {
+OLED::OLED(thermostat_settings* settings, sensor_readings* sensor) {
+	m_settings = settings;
+	m_sensor = sensor;
 	edit_oled_menu = false;
 	oled_menu_item = 0;
 	oled_menu_state = 0;
@@ -56,27 +58,30 @@ void OLED::update_oled() {
 	}
 }
 
-void OLED::isr_button_A() {
+void OLED::isr_button_A(void* param) {
+	OLED* oled = static_cast<OLED*>(param);
 	// Change to the previous menu
-	oled_menu_state++;
+	oled->oled_menu_state++;
 	// reset scroll counter so it starts at the top and not where it was before
-	oled_scroll_counter = 0;
+	oled->oled_scroll_counter = 0;
 	// TODO callback to update OLED display outside of interrupt
 }
 
-void OLED::isr_button_B() {
+void OLED::isr_button_B(void* param) {
+	OLED* oled = static_cast<OLED*>(param);
 	// Change to the previous menu
-	oled_menu_state--;
+	oled->oled_menu_state--;
 	// reset scroll counter so it starts at the top and not where it was before
-	oled_scroll_counter = 0;
+	oled->oled_scroll_counter = 0;
 	// TODO callback to update OLED display outside of interrupt
 }
 
-void OLED::isr_rotary_btn() {
-	edit_oled_menu = !edit_oled_menu;
+void OLED::isr_rotary_btn(void* param) {
+	OLED* oled = static_cast<OLED*>(param);
+	oled->edit_oled_menu = !oled->edit_oled_menu;
 
 	// If editing, get the corrisponding variable and copy it to a temporary variable
-	if(edit_oled_menu) {
+	if(oled->edit_oled_menu) {
 
 	}
 	else { // If not editing set the temporary to the corrisponding var
@@ -84,7 +89,8 @@ void OLED::isr_rotary_btn() {
 	}
 }
 
-void OLED::isr_rotary() {
+void OLED::isr_rotary(void* param) {
+	OLED* oled = static_cast<OLED*>(param);
 	PinStatus rotary_A_state = digitalRead(ROTARY_A_PIN);
 	PinStatus rotary_B_state = digitalRead(ROTARY_B_PIN);
 	int8_t direction = 0;
@@ -94,17 +100,17 @@ void OLED::isr_rotary() {
 	else if (rotary_A_state && rotary_B_state) { // CCW
 		--direction;
 	}
-	if (edit_oled_menu) {
-		temporary_setting += direction;
+	if (oled->edit_oled_menu) {
+		oled->temporary_setting += direction;
 	}
 	else {
-		oled_scroll_counter += direction;
+		oled->oled_scroll_counter += direction;
 	}
 	// TODO call back to update OLED
 }
 
-void OLED::isr_motion() {
-
+void OLED::isr_motion(void* param) {
+	OLED* oled = static_cast<OLED*>(param);
 }
 
 void OLED::menu_sensor_data() {
@@ -115,25 +121,25 @@ void OLED::menu_sensor_data() {
 	sd1306_draw_string(OLED_TITLE_X, OLED_TITLE_Y, "Sensor Data", FONT_SIZE_TITLE, white_pixel);
 
 	// Convert celcius temperature to string
-	sprintf(buffer, "HDC1080:  %.1f C�\0", sensor->temp_C);
+	sprintf(buffer, "HDC1080:  %.1f C°\0", m_sensor->temperature_C);
 
 	// Draw celcius temperature at line 1
 	sd1306_draw_string(OLED_LINE_1_X, OLED_LINE_1_Y, buffer, FONT_SIZE_LINE, white_pixel);
 
 	// Convert fahrenheit temperature to string
-	sprintf(buffer, "HDC1080:  %.1f F�\0", sensor->temp_F);
+	sprintf(buffer, "HDC1080:  %.1f F°\0", m_sensor->temperature_F);
 
 	// Draw fahrenheit temperature at line 2
 	sd1306_draw_string(OLED_LINE_2_X, OLED_LINE_2_Y, buffer, FONT_SIZE_LINE, white_pixel);
 
 	// Convert humidity to string
-	sprintf(buffer, "Humidity: %.1f %%\0", sensor->humidity);
+	sprintf(buffer, "Humidity: %.1f %%\0", m_sensor->humidity);
 
 	// Draw humidity at line 3
 	sd1306_draw_string(OLED_LINE_3_X, OLED_LINE_3_Y, buffer, FONT_SIZE_LINE, white_pixel);
 
 	// Convert average temperature to string
-	sprintf(buffer, "Average:  %.1f F�\0", averageTemp_F);
+	sprintf(buffer, "Average:  %.1f F°\0", m_sensor->average_temperature);
 
 	// Draw humidity at line 3
 	sd1306_draw_string(OLED_LINE_4_X, OLED_LINE_4_Y, buffer, FONT_SIZE_LINE, white_pixel);
@@ -156,7 +162,7 @@ void OLED::menu_sample_settings() {
 		sprintf(buffer, "Total Samples: %d\0", temporary_setting);
 	}
 	else {
-		sprintf(buffer, "Total Samples: %d\0", settings->totalSamples);
+		sprintf(buffer, "Total Samples: %d\0", m_settings->total_samples);
 	}
 	// Draw total samples at line 1
 	sd1306_draw_string(OLED_LINE_1_X, OLED_LINE_1_Y, buffer, FONT_SIZE_LINE, white_pixel);
@@ -167,7 +173,7 @@ void OLED::menu_sample_settings() {
 		
 	}
 	else {
-		sprintf(buffer, "Sample Period: %ds\0", settings->samplePeriod.tv_sec);
+		sprintf(buffer, "Sample Period: %ds\0", m_settings->sample_period_sec);
 
 	}
 	// Draw sample period in seconds at line 2
@@ -193,17 +199,17 @@ void OLED::menu_set_temperature() {
 	sd1306_draw_string(OLED_TITLE_X, OLED_TITLE_Y, "Edit Temp", FONT_SIZE_TITLE, white_pixel);
 
 	// Convert temperature to string
-	sprintf(buffer, "Air: %.1fF�\0", sensor->temp_F);
+	sprintf(buffer, "Air: %.1fF°\0", m_sensor->temperature_F);
 
 	// Draw room temperature label at line 1
 	sd1306_draw_string(OLED_LINE_1_X, OLED_LINE_1_Y, buffer, FONT_SIZE_TITLE, white_pixel);
 
 	// Convert target temperature to string
 	if (edit_oled_menu && oled_menu_item == TARGET) {
-		sprintf(buffer, "Set: %d.0F�\0", temporary_setting);
+		sprintf(buffer, "Set: %d.0F°\0", temporary_setting);
 	}
 	else {
-		sprintf(buffer, "Set: %.1fF�\0", settings->targetTemp_F);
+		sprintf(buffer, "Set: %.1fF°\0", m_settings->target_temperature);
 	}
 
 	// Draw target temperature at line 2
@@ -230,30 +236,30 @@ void OLED::menu_set_thresholds() {
 
 	// Switch between edited value and set value
 	if (edit_oled_menu && oled_menu_item == THRESHOLDLOWER) {
-		sprintf(buffer, "Thresh Lower:  %d.0 F�\0", temporary_setting);
+		sprintf(buffer, "Thresh Lower:  %d.0 F°\0", temporary_setting);
 	}
 	else {
-		sprintf(buffer, "Thresh Lower:  %.1f F�\0", settings->lower_threshold);
+		sprintf(buffer, "Thresh Lower:  %.1f F°\0", m_settings->lower_threshold);
 	}
 	// Draw lower threshold at line 1
 	sd1306_draw_string(OLED_LINE_1_X, OLED_LINE_1_Y, buffer, FONT_SIZE_LINE, white_pixel);
 
 	// Switch between edited value and set value
 	if (edit_oled_menu && oled_menu_item == THRESHOLDUPPER) {
-		sprintf(buffer, "Thresh Upper:  %d.0 F�\0", temporary_setting);
+		sprintf(buffer, "Thresh Upper:  %d.0 F°\0", temporary_setting);
 	}
 	else {
-		sprintf(buffer, "Thresh Upper:  %.1f F�\0", settings->upper_threshold);
+		sprintf(buffer, "Thresh Upper:  %.1f F°\0", m_settings->upper_threshold);
 	}
 	// Draw upper threshold at line 2
 	sd1306_draw_string(OLED_LINE_2_X, OLED_LINE_2_Y, buffer, FONT_SIZE_LINE, white_pixel);
 
 	// Switch between edited value and set value
 	if (edit_oled_menu && oled_menu_item == BASELINE) {
-		sprintf(buffer, "Baseline:     %d.0 F�\0", temporary_setting);
+		sprintf(buffer, "Baseline:     %d.0 F°\0", temporary_setting);
 	}
 	else {
-		sprintf(buffer, "Baseline:     %.1f F�\0", settings->baselineTemp_F);
+		sprintf(buffer, "Baseline:     %.1f F°\0", m_settings->baseline_temperature);
 	}
 
 	// Draw baseline temperautre at line 3
@@ -283,7 +289,7 @@ void OLED::menu_motion_settings() {
 		sprintf(buffer, "Screen Timeout: %ds\0", temporary_setting);
 	}
 	else {
-		sprintf(buffer, "Screen Timeout: %ds\0", settings->screenTimeoutSec);
+		sprintf(buffer, "Screen Timeout: %ds\0", m_settings->screen_timeout_sec);
 	}
 	// Draw a screen timeout at line 1
 	sd1306_draw_string(OLED_LINE_1_X, OLED_LINE_1_Y, buffer, FONT_SIZE_LINE, white_pixel);
@@ -294,7 +300,7 @@ void OLED::menu_motion_settings() {
 	}
 	else {
 		// Also, covnert seconds to hours
-		sprintf(buffer, "Away Time: %d hr\0", settings->motionDetectorSec / 3600);
+		sprintf(buffer, "Away Time: %d hr\0", m_settings->motion_timeout_sec / 3600);
 	}
 	// Draw away time at line 2
 	sd1306_draw_string(OLED_LINE_2_X, OLED_LINE_2_Y, buffer, FONT_SIZE_LINE, white_pixel);
@@ -312,21 +318,21 @@ void OLED::menu_motion_settings() {
 void OLED::menu_date_and_time() {
 
 	int8_t items[] = { -1, -1,SYNCRTC, CHANGEHOUR };
-
-	struct timespec currentTime;
-	if (clock_gettime(CLOCK_REALTIME, &currentTime) == -1) {
-		Log_Debug("ERROR: clock_gettime failed with error code: %s (%d).\n", strerror(errno),
-			errno);
-		return;
-	}
-	char displayTimeBuffer[26];
-	if (!asctime_r((localtime(&currentTime.tv_sec)), (char *restrict) & displayTimeBuffer)) {
-		Log_Debug("ERROR: asctime_r failed with error code: %s (%d).\n", strerror(errno),
-			errno);
-		return;
-	}
+	// TODO fix this
+	// struct timespec currentTime;
+	// if (clock_gettime(CLOCK_REALTIME, &currentTime) == -1) {
+	// 	Log_Debug("ERROR: clock_gettime failed with error code: %s (%d).\n", strerror(errno),
+	// 		errno);
+	// 	return;
+	// }
+	// char displayTimeBuffer[26];
+	// if (!asctime_r((localtime(&currentTime.tv_sec)), (char *restrict) & displayTimeBuffer)) {
+	// 	Log_Debug("ERROR: asctime_r failed with error code: %s (%d).\n", strerror(errno),
+	// 		errno);
+	// 	return;
+	// }
 	// Remove the new line at the end of 'displayTimeBuffer'
-	displayTimeBuffer[strlen(displayTimeBuffer) - 5] = '\0';
+	//displayTimeBuffer[strlen(displayTimeBuffer) - 5] = '\0';
 
 	// Clear OLED buffer
 	clear_oled_buffer();
@@ -335,7 +341,7 @@ void OLED::menu_date_and_time() {
 	sd1306_draw_string(OLED_TITLE_X, OLED_TITLE_Y, "Time", FONT_SIZE_TITLE, white_pixel);
 
 	// Draw date at line 1
-	sd1306_draw_string(OLED_LINE_1_X, OLED_LINE_1_Y, displayTimeBuffer, FONT_SIZE_LINE, white_pixel);
+	//sd1306_draw_string(OLED_LINE_1_X, OLED_LINE_1_Y, displayTimeBuffer, FONT_SIZE_LINE, white_pixel);
 
 	// Draw sync option on line 2
 	sd1306_draw_string(OLED_LINE_2_X, OLED_LINE_2_Y, "Sync RTC Time  'OK'", FONT_SIZE_LINE, white_pixel);
@@ -375,19 +381,21 @@ void OLED::menu_current_cycle() {
 	sd1306_draw_string(OLED_TITLE_X, OLED_TITLE_Y, "Cycle Info", FONT_SIZE_TITLE, white_pixel);
 
 	// Draw start time on line 1
-	sprintf(buffer, "Start time %02d:%02d\0", settings->currentCycle->start_hour, settings->currentCycle->start_min);
+	sprintf(buffer, "Start time %02d:%02d\0", m_settings->current_cycle->start_hour, m_settings->current_cycle->start_min);
 	sd1306_draw_string(OLED_LINE_1_X, OLED_LINE_1_Y, buffer, FONT_SIZE_LINE, white_pixel);
 	
 	// Draw end time on line 2
-	if (settings->currentCycle->prev != NULL)
-		sprintf(buffer, "End time   %02d:%02d\0", settings->currentCycle->prev->start_hour, settings->currentCycle->prev->start_min);
-	else
-		sprintf(buffer, "End time   %02d:%02d\0", 0,0);
-	sd1306_draw_string(OLED_LINE_2_X, OLED_LINE_2_Y, buffer, FONT_SIZE_LINE, white_pixel);
+	// TODO fix this
+	// if (m_settings->current_cycle->prev != NULL)
+	// 	sprintf(buffer, "End time   %02d:%02d\0", m_settings->current_cycle->prev->start_hour, m_settings->current_cycle->prev->start_min);
+	// else
+	// 	sprintf(buffer, "End time   %02d:%02d\0", 0,0);
+	// sd1306_draw_string(OLED_LINE_2_X, OLED_LINE_2_Y, buffer, FONT_SIZE_LINE, white_pixel);
 
 	// Draw runtime on line 3
-	sprintf(buffer, "Runtime %d min\0", furnaceRunTime / 60);
-	sd1306_draw_string(OLED_LINE_3_X, OLED_LINE_3_Y, buffer, FONT_SIZE_LINE, white_pixel);
+	// TODO fix this
+	// sprintf(buffer, "Runtime %d min\0", furnaceRunTime / 60);
+	// sd1306_draw_string(OLED_LINE_3_X, OLED_LINE_3_Y, buffer, FONT_SIZE_LINE, white_pixel);
 
 	// Send the buffer to OLED RAM
 	sd1306_refresh();
@@ -406,67 +414,69 @@ switch (oled_menu_item)
 	{
 	case TARGET:
 	{
-		if (temporary_setting >= settings->baselineTemp_F && temporary_setting <= 95) {
-			settings->temporaryTarget = settings->targetTemp_F;
-			settings->targetTemp_F = temporary_setting;
-			startTemporaryTimer = true;
-			sprintf(CURLMessageBuffer, "TARGET=%f&THRESH_L=%f&THRESH_H=%f\0", settings->targetTemp_F, settings->lower_threshold, settings->upper_threshold);
-			sendCURL(URL_STATS, CURLMessageBuffer);
+		if (temporary_setting >= m_settings->baseline_temperature && temporary_setting <= 95) {
+			// TODO fix this
+			// m_settings->temporaryTarget = m_settings->targetTemp_F;
+			// m_settings->targetTemp_F = temporary_setting;
+			// startTemporaryTimer = true;
+			//sprintf(CURLMessageBuffer, "TARGET=%f&THRESH_L=%f&THRESH_H=%f\0", m_settings->targetTemp_F, m_settings->lower_threshold, m_settings->upper_threshold);
+			//sendCURL(URL_STATS, CURLMessageBuffer);
 		}
 	}
 	break;
 	case THRESHOLDLOWER:
 	{
 		if (temporary_setting >= 0 && temporary_setting <= 5) {
-			settings->lower_threshold = temporary_setting;
-			sprintf(CURLMessageBuffer, "TARGET=%f&THRESH_L=%f&THRESH_H=%f\0", settings->targetTemp_F, settings->lower_threshold, settings->upper_threshold);
-			sendCURL(URL_STATS, CURLMessageBuffer);
+			m_settings->lower_threshold = temporary_setting;
+			//sprintf(CURLMessageBuffer, "TARGET=%f&THRESH_L=%f&THRESH_H=%f\0", m_settings->targetTemp_F, m_settings->lower_threshold, m_settings->upper_threshold);
+			//sendCURL(URL_STATS, CURLMessageBuffer);
 		}
 	}
 	break;
 	case THRESHOLDUPPER:
 	{
 		if (temporary_setting >= 0 && temporary_setting <= 5) {
-			settings->upper_threshold = temporary_setting;
-			sprintf(CURLMessageBuffer, "TARGET=%f&THRESH_L=%f&THRESH_H=%f\0", settings->targetTemp_F, settings->lower_threshold, settings->upper_threshold);
-			sendCURL(URL_STATS, CURLMessageBuffer);
+			m_settings->upper_threshold = temporary_setting;
+			//sprintf(CURLMessageBuffer, "TARGET=%f&THRESH_L=%f&THRESH_H=%f\0", m_settings->targetTemp_F, m_settings->lower_threshold, m_settings->upper_threshold);
+			//sendCURL(URL_STATS, CURLMessageBuffer);
 		}
 	}
 	break;
 	case BASELINE:
 	{
 		if (temporary_setting >= 45 && temporary_setting <= 60)
-			settings->baselineTemp_F = temporary_setting;
+			m_settings->baseline_temperature = temporary_setting;
 	}
 	break;
 	case TOTALSAMPLES:
 	{
 		if (temporary_setting >= 1 && temporary_setting <= 20)
-			settings->totalSamples = temporary_setting;
+			m_settings->total_samples = temporary_setting;
 	}
 	break;
 	case SAMPLEPERIOD:
 	{
 		if (temporary_setting >= 5 && temporary_setting <= 300) {
-			reconfigureTimer = true;
-			struct timespec t = { temporary_setting, 0 };
-			settings->samplePeriod = t;
+			// TODO fix this
+			//reconfigureTimer = true;
+			m_settings->sample_period_sec = temporary_setting;
 		}
 	}
 	break;
 	case SCREENTIMEOUT:
 	{
 		if (temporary_setting >= 1 && temporary_setting <= 180)
-			settings->screenTimeoutSec = temporary_setting;
+			m_settings->screen_timeout_sec = temporary_setting;
 	}
 	break;
 	case MOTIONDETECTION:
 	{
 		if(temporary_setting >= 6 && temporary_setting <= 96)
-			settings->motionDetectorSec = temporary_setting * 3600; // convert to seconds from hours
+			m_settings->motion_timeout_sec = temporary_setting * 3600; // convert to seconds from hours
 	}
 	case CHANGEHOUR:
 	{
+		// TODO fix this
 		// if (temporary_setting >= -1 && temporary_setting <= 1) {
 
 		// 	char* timezone_name = getenv("TZ");
@@ -486,42 +496,42 @@ switch (oled_menu_item)
 	{
 	case TARGET:
 	{
-		temporary_setting = settings->targetTemp_F;
+		temporary_setting = m_settings->target_temperature;
 	}
 	break;
 	case THRESHOLDLOWER:
 	{
-		temporary_setting = settings->lower_threshold;
+		temporary_setting = m_settings->lower_threshold;
 	}
 	break;
 	case THRESHOLDUPPER:
 	{
-		temporary_setting = settings->upper_threshold;
+		temporary_setting = m_settings->upper_threshold;
 	}
 	break;
 	case BASELINE:
 	{
-		temporary_setting = settings->baselineTemp_F;
+		temporary_setting = m_settings->baseline_temperature;
 	}
 	break;
 	case TOTALSAMPLES:
 	{
-		temporary_setting = settings->totalSamples;
+		temporary_setting = m_settings->total_samples;
 	}
 	break;
 	case SAMPLEPERIOD:
 	{
-		temporary_setting = settings->samplePeriod.tv_sec;
+		temporary_setting = m_settings->sample_period_sec;
 	}
 	break;
 	case SCREENTIMEOUT:
 	{
-		temporary_setting = settings->screenTimeoutSec;
+		temporary_setting = m_settings->screen_timeout_sec;
 	}
 	break;
 	case MOTIONDETECTION:
 	{
-		temporary_setting = settings->motionDetectorSec/3600; // convert from seconds to hours
+		temporary_setting = m_settings->motion_timeout_sec/3600; // convert from seconds to hours
 	}
 	break;
 	case CHANGEHOUR:
@@ -531,6 +541,7 @@ switch (oled_menu_item)
 	break;
 	case SYNCRTC:
 	{
+		// TODO fix this
 		// if (clock_systohc() == -1) {
 		// 	Log_Debug("ERROR: clock_systohc failed with error code: %s (%d).\n", strerror(errno),errno);
 		// 	return;
