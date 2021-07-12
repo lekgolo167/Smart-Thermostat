@@ -4,6 +4,7 @@
 #include <Arduino.h>
 
 #include "Constants.hpp"
+#include "SD1306.hpp"
 
 #define OLED_NUM_MENUS 7
 
@@ -40,6 +41,8 @@ public:
 	void isr_rotary();
 	void isr_motion();
 private:
+	void oled_draw_logo();
+	void clear_oled_buffer();
 	void menu_sensor_data();
 	void menu_sample_settings();
 	void menu_set_temperature();
@@ -48,12 +51,15 @@ private:
 	void menu_date_and_time();
 	void menu_current_cycle();
 
+	void update_user_settings();
+	void update_temporary_setting_value();
 	void bound_scroll_counter(int8_t low, int8_t high, uint8_t height);
 
 	int8_t oled_scroll_counter;
 	int8_t oled_menu_state;
 	int8_t oled_menu_item;
 	int8_t temporary_setting;
+	char buffer[25];
 	bool edit_oled_menu;
 	bool oled_screen_ON;
 	static int8_t line_selection[];
