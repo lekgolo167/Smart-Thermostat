@@ -14,18 +14,18 @@ void initGPIO(OLED& oled)
 {
   // Buttons
   pinMode(BUTTON_A_PIN, INPUT);
-  attachInterruptParam(digitalPinToInterrupt(BUTTON_A_PIN), oled.isr_button_A, RISING, &oled);
+  attachInterrupt(digitalPinToInterrupt(BUTTON_A_PIN), oled.isr_button_A, RISING);
   pinMode(BUTTON_B_PIN, INPUT);
-  attachInterruptParam(digitalPinToInterrupt(BUTTON_B_PIN), oled.isr_button_B, RISING, &oled);
+  attachInterrupt(digitalPinToInterrupt(BUTTON_B_PIN), oled.isr_button_B, RISING);
   // Rotary Enocder
   pinMode(ROTARY_A_PIN, INPUT);
-  attachInterruptParam(digitalPinToInterrupt(ROTARY_A_PIN), oled.isr_rotary, RISING, &oled);
+  attachInterrupt(digitalPinToInterrupt(ROTARY_A_PIN), oled.isr_rotary, RISING);
   pinMode(ROTARY_B_PIN, INPUT);
   pinMode(ROTARY_BTN_PIN, INPUT);
-  attachInterruptParam(digitalPinToInterrupt(ROTARY_BTN_PIN), oled.isr_rotary_btn, RISING, &oled);
+  attachInterrupt(digitalPinToInterrupt(ROTARY_BTN_PIN), oled.isr_rotary_btn, RISING);
   // Motion Sensor
   pinMode(MOTION_SENSOR_PIN, INPUT_PULLDOWN);
-  attachInterruptParam(digitalPinToInterrupt(MOTION_SENSOR_PIN), oled.isr_motion, RISING, &oled);
+  attachInterrupt(digitalPinToInterrupt(MOTION_SENSOR_PIN), oled.isr_motion, RISING);
   // Furnace Relay
   pinMode(FURNACE_RELAY_PIN, OUTPUT);
   digitalWrite(FURNACE_RELAY_PIN, LOW);

@@ -6,6 +6,10 @@
 		{
 			"name": "Smart_Thermostat",
 			"path": "..\\Smart_Thermostat"
+		},
+		{
+			"name": "Tester",
+			"path": "..\\..\\..\\PlatformIO\\Projects\\Tester"
 		}
 	],
 	"settings": {}

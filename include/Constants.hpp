@@ -1,13 +1,15 @@
+#pragma once
+
 #include <stdint.h>
 
 // Buttons
-const uint8_t BUTTON_A_PIN = 0;
-const uint8_t BUTTON_B_PIN = 0;
+const uint8_t BUTTON_A_PIN = 9;
+const uint8_t BUTTON_B_PIN = 10;
 
 // Rotary Encoder
-const uint8_t ROTARY_A_PIN = 0;
-const uint8_t ROTARY_B_PIN = 0;
-const uint8_t ROTARY_BTN_PIN = 0;
+const uint8_t ROTARY_A_PIN = 2;
+const uint8_t ROTARY_B_PIN = 4;
+const uint8_t ROTARY_BTN_PIN = 3;
 
 // Relay
 const uint8_t FURNACE_RELAY_PIN = 0;
