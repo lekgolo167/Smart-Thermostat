@@ -1,8 +1,4 @@
-#include <Wire.h>
-
 #include "Initialization.hpp"
-#include "Constants.hpp"
-#include "Oled.h"
 
 void  initI2C()
 {
@@ -33,7 +29,7 @@ void initGPIO(OLED& oled)
 
 void initTimers()
 {
-
+  
 }
 
 void initWiFi()

@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <Arduino.h>
 #include <Adafruit_SSD1306.h>
+#include <RTCZero.h>
 
 #include "Constants.hpp"
 #include "Thermostat.hpp"
@@ -35,7 +36,7 @@
 
 class OLED {
 public:
-	OLED(Adafruit_SSD1306* display, thermostat_settings* settings, sensor_readings* sensor);
+	OLED(Adafruit_SSD1306* display, RTCZero& rtc, thermostat_settings* settings, sensor_readings* sensor);
 	~OLED();
 	void update_oled();
 	static void isr_button_A();
@@ -60,6 +61,7 @@ private:
 	Adafruit_SSD1306* m_display;
 	thermostat_settings* m_settings;
 	sensor_readings* m_sensor;
+	RTCZero m_rtc;
 	inline static int8_t oled_scroll_counter;
 	inline static int8_t oled_menu_state;
 	int8_t oled_menu_item;

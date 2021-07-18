@@ -6,8 +6,6 @@
 #include "Server.hpp"
 #include "Constants.hpp"
 
-RTCZero rtc;
-
 struct sensor_readings {
 	float temperature_F;
 	float temperature_C;
@@ -29,7 +27,7 @@ struct thermostat_settings {
 
 class Thermostat {
 public:
-	Thermostat();
+	Thermostat(RTCZero& rtc);
 	void run_cycle();
 
 private:
@@ -40,6 +38,7 @@ private:
 	void stop_tempoaray_timer();
 	void toggle_furnace_relay(bool power_ON);
 
+	RTCZero m_rtc;
 	thermostat_settings m_settings;
 	bool m_furnace_ON;
 	uint32_t m_furnace_start_time;

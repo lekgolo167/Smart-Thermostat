@@ -1,8 +1,9 @@
 #include "Oled.h"
 
-OLED::OLED(Adafruit_SSD1306* display, thermostat_settings* settings, sensor_readings* sensor) {
+OLED::OLED(Adafruit_SSD1306* display, RTCZero& rtc, thermostat_settings* settings, sensor_readings* sensor) {
 	m_settings = settings;
 	m_sensor = sensor;
+	m_rtc = rtc;
 	m_display = display;// new Adafruit_SSD1306(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 	//m_display->begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS, -1, true);
 	m_display->setTextColor(SSD1306_WHITE);
@@ -379,8 +380,16 @@ void OLED::menu_date_and_time() {
 	m_display->println("Time");
 	m_display->setTextSize(FONT_SIZE_LINE);
 
-	// Draw date at line 1
-	//m_display->println(displayTimeBuffer);
+	// Convert time into date string
+	uint8_t mins = m_rtc.getMinutes();
+	uint8_t hrs = m_rtc.getHours();
+	uint8_t day = m_rtc.getDay();
+	uint8_t month = m_rtc.getMonth();
+	sprintf(buffer, "%2d:%2d  %.1f F\367", m_sensor->average_temperature);
+
+	// Draw humidity at line 4
+	m_display->setCursor(1,OLED_LINE_4_Y);
+	m_display->println(buffer);
 
 	// Draw sync option on line 2
 	m_display->println("Sync RTC Time  'OK'");

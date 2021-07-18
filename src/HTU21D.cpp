@@ -25,7 +25,7 @@
 
 #include <Wire.h>
 
-#include "HTU21D.h"
+#include "HTU21D.hpp"
 
 HTU21D::HTU21D()
 {

@@ -15,7 +15,7 @@ const uint8_t ROTARY_BTN_PIN = 3;
 const uint8_t FURNACE_RELAY_PIN = 0;
 
 // Motion Sensor
-const uint8_t MOTION_SENSOR_PIN = 0;
+const uint8_t MOTION_SENSOR_PIN = 11;
 
 // I2C
 const uint32_t I2C_FREQ = 400000;
