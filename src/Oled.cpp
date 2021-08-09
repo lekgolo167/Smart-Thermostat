@@ -1,9 +1,9 @@
-#include "Oled.h"
+#include "Oled.hpp"
 
-OLED::OLED(Adafruit_SSD1306* display, RTCZero& rtc, thermostat_settings* settings, sensor_readings* sensor) {
+OLED::OLED(Adafruit_SSD1306* display, tm* clk, thermostat_settings* settings, sensor_readings* sensor) {
 	m_settings = settings;
 	m_sensor = sensor;
-	m_rtc = rtc;
+	m_time = clk;
 	m_display = display;// new Adafruit_SSD1306(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 	//m_display->begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS, -1, true);
 	m_display->setTextColor(SSD1306_WHITE);
@@ -19,14 +19,10 @@ OLED::~OLED() {
 
 }
 
-void OLED::update_oled() {
-	if (update_temporary) {
-		update_temporary = false;
-		update_temporary_setting_value();
-	}
-	else if (save_temporary) {
-		save_temporary = false;
-		update_user_settings();
+void OLED::update() {
+
+	if (!oled_screen_ON) {
+		return;
 	}
 
 	switch (oled_menu_state) {
@@ -66,63 +62,50 @@ void OLED::update_oled() {
 			if (oled_menu_state > 7 || oled_menu_state < 0) {
 				oled_menu_state = 0;
 			}
-			update_oled();
+			update();
 			break;
 		}
 	}
 }
 
-void OLED::isr_button_A() {
-	Serial.println("Forward");
-
-	// // Change to the previous menu
+void OLED::next_menu() {
 	oled_menu_state++;
-	// // reset scroll counter so it starts at the top and not where it was before
 	oled_scroll_counter = 0;
-	// // TODO callback to update OLED display outside of interrupt
+	update();
 }
 
-void OLED::isr_button_B() {
-	Serial.println("Back");
-	// // Change to the previous menu
-oled_menu_state--;
-	// // reset scroll counter so it starts at the top and not where it was before
-oled_scroll_counter = 0;
-	// // TODO callback to update OLED display outside of interrupt
+void OLED::previous_menu() {
+	oled_menu_state--;
+	oled_scroll_counter = 0;
+	update();
 }
 
-void OLED::isr_rotary_btn() {
-Serial.println("ISR ROTARY BTN");
+void OLED::edit() {
 	edit_oled_menu = !edit_oled_menu;
 
-	// If editing, get the corrisponding variable and copy it to a temporary variable
-	if(edit_oled_menu) {
-		update_temporary = true;
+	if(edit_oled_menu) { 	// If editing, get the corrisponding variable and copy it to a temporary variable
 		Serial.println("Edit menu");
+		update_temporary_setting_value();
 	}
 	else { // If not editing set the temporary to the corrisponding var
-		save_temporary = true;
 		Serial.println("Save menu");
+		update_user_settings();
 	}
+	update();
 }
 
-void OLED::isr_rotary() {
+void OLED::on()
+{
+	oled_screen_ON = true;
+}
 
-	PinStatus rotary_A_state = digitalRead(ROTARY_A_PIN);
-	PinStatus rotary_B_state = digitalRead(ROTARY_B_PIN);
-	int8_t direction = 0;
-	Serial.print("A: ");
-	Serial.print(rotary_A_state);
-	Serial.print(", B: ");
-	Serial.print(rotary_B_state);
-	if (rotary_A_state && !rotary_B_state) { // CCW
-		--direction;
-		Serial.println("--");
-	}
-	else if (rotary_A_state && rotary_B_state) { // CW
-		++direction;
-		Serial.println("++");
-	}
+void OLED::off() {
+	oled_screen_ON = false;
+	m_display->clearDisplay();
+	m_display->display();
+}
+
+void OLED::rotary_dial(uint8_t direction) {
 	if (edit_oled_menu) {
 		Serial.print("Temporary: ");
 		temporary_setting += direction;
@@ -133,11 +116,7 @@ void OLED::isr_rotary() {
 		oled_scroll_counter += direction;
 		Serial.println(oled_scroll_counter);
 	}
-	// TODO call back to update OLED
-}
-
-void OLED::isr_motion() {
-
+	update();
 }
 
 void OLED::menu_set_temperature() {
@@ -381,15 +360,19 @@ void OLED::menu_date_and_time() {
 	m_display->setTextSize(FONT_SIZE_LINE);
 
 	// Convert time into date string
-	uint8_t mins = m_rtc.getMinutes();
-	uint8_t hrs = m_rtc.getHours();
-	uint8_t day = m_rtc.getDay();
-	uint8_t month = m_rtc.getMonth();
-	sprintf(buffer, "%2d:%2d  %.1f F\367", m_sensor->average_temperature);
+	char* c = asctime(m_time);
+	c[16] = ' ';
+
+	c[17] = c[20];
+	c[18] = c[21];
+	c[19] = c[22];
+	c[20] = c[23];
+
+	c[21] = '\0';
 
 	// Draw humidity at line 4
-	m_display->setCursor(1,OLED_LINE_4_Y);
-	m_display->println(buffer);
+	m_display->setCursor(1,OLED_LINE_1_Y);
+	m_display->println(c);
 
 	// Draw sync option on line 2
 	m_display->println("Sync RTC Time  'OK'");
@@ -432,7 +415,7 @@ void OLED::menu_current_cycle() {
 	m_display->setTextSize(FONT_SIZE_LINE);
 
 	// Draw start time on line 1
-	sprintf(buffer, "Start time %02d:%02d", m_settings->current_cycle->start_hour, m_settings->current_cycle->start_min);
+	//sprintf(buffer, "Start time %02d:%02d", m_settings->current_cycle->start_hour, m_settings->current_cycle->start_min);
 	m_display->println(buffer);
 	
 	// Draw end time on line 2

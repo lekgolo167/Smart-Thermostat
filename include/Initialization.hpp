@@ -5,12 +5,13 @@
 #include <RTCZero.h>
 
 #include "Constants.hpp"
-#include "Oled.h"
 
 void initI2C();
 
-void initGPIO(OLED& oled);
+void initGPIO();
 
 void initTimers();
 
 void initWiFi();
+
+void initRTC(RTCZero& rtc);

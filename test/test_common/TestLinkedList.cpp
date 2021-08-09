@@ -1,7 +1,5 @@
 #include <unity.h>
 
-#include "Sane.hpp"
-
 // void setUp(void) {
 // // set stuff up here
 // }
@@ -11,7 +9,7 @@
 // }
 
 void test_linked_list_insert(void) {
-    TEST_ASSERT_EQUAL(117, why(117));
+    //TEST_ASSERT_EQUAL();
 }
 
 int main(int argc, char **argv) {
