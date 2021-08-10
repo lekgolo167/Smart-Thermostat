@@ -76,6 +76,8 @@ void initTimers()
 {
   TC4_configure(30, 3);
   TC4_start_timer();
+
+  TC3_configure(3);
 }
 
 void initWiFi()
@@ -85,8 +87,10 @@ void initWiFi()
 
 void initRTC(RTCZero& rtc) {
   rtc.begin();
-  rtc.setTime(23,58,0);
-  rtc.setDate(8,8,21);
+  rtc.setTime(21,33,0);
+  rtc.setDate(9,8,21);
+
+  REG_RTC_FREQCORR = 120;
 
   rtc.setAlarmTime(1,0,0);
   rtc.enableAlarm(rtc.MATCH_SS);

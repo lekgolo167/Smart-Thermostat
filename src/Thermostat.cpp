@@ -14,6 +14,9 @@ Thermostat::Thermostat(tm* clk, thermostat_settings* settings, sensor_readings* 
 	m_settings->screen_timeout_sec = 15;
 	m_settings->motion_timeout_sec = 172800;
 
+	m_furnace_ON = false;
+	m_furnace_runtime = 0;
+
 	int id = -1;
 	for (uint8_t day = 0; day < 7; day++){
 		m_days[day] = new CycleList();
@@ -24,7 +27,7 @@ Thermostat::Thermostat(tm* clk, thermostat_settings* settings, sensor_readings* 
 void Thermostat::initialize() {
 	htu.begin();
 	sample_air();
-	m_settings->current_cycle = m_days[m_time->tm_wday]->find_next_cycle(m_time->tm_hour, m_time->tm_min);
+	m_settings->current_cycle = m_days[0]->find_next_cycle(0, 0);
 	m_settings->current_cycle->id = 0;
 
 	m_sample_avg_index = 0;
@@ -71,16 +74,16 @@ void Thermostat::run_cycle() {
 void Thermostat::toggle_furnace_relay(bool power_ON) {
 	if (power_ON != m_furnace_ON) {
 		if (power_ON) {
-			m_furnace_start_time = mktime(m_time);
+			m_furnace_start_time = millis();
 			digitalWrite(FURNACE_RELAY_PIN, HIGH);
 		}
 		else {
-			m_furnace_runtime = mktime(m_time) - m_furnace_start_time;
+			m_furnace_runtime = (millis() - m_furnace_start_time) / 1000; // convert to seconds
 			digitalWrite(FURNACE_RELAY_PIN, LOW);
-			// TODO send runtime to server
+			global_msg_queue->push(SAVE_RUNTIME);
 		}
 		m_furnace_ON = power_ON;
-		// send furnace state to server
+		// TODO send furnace state to server
 	}
 
 }
@@ -105,7 +108,7 @@ void Thermostat::sample_air() {
 }
 
 bool Thermostat::motion_timeout_check() {
-	return false;
+	return true;
 }
 
 bool Thermostat::check_server_for_updates() {
@@ -127,4 +130,8 @@ bool Thermostat::check_server_for_updates() {
 
 void Thermostat::stop_tempoaray_timer() {
 
+}
+
+uint32_t Thermostat::get_runtime() {
+	return m_furnace_runtime;
 }

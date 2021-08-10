@@ -6,6 +6,7 @@
 #include "Initialization.hpp"
 #include "Oled.hpp"
 #include "MesgQueue.hpp"
+#include "Timers.hpp"
 
 sensor_readings* sensor  = new sensor_readings;
 thermostat_settings* settings = new thermostat_settings;
@@ -24,6 +25,15 @@ void TC4_Handler (void) {
   TC4->COUNT32.INTFLAG.bit.MC0 = 1; //Writing a 1 to INTFLAG.bit.MC0 clears the interrupt so that it will run again
 }
 
+void TC3_Handler(void) {
+  // USER CODE HERE
+  if (millis() - oled.get_motion_timestamp() > settings->screen_timeout_sec) {
+    msg_queue.push(NO_MOTION);
+  }
+  // END OF USER CODE
+  TC3->COUNT16.INTFLAG.bit.MC0 = 1; //Writing a 1 to INTFLAG.bit.MC0 clears the interrupt so that it will run again
+}
+
 void service_msg_queue();
 
 void setup()
@@ -37,6 +47,9 @@ void setup()
   initWiFi();
   initRTC(rtc);
   thermostat.initialize();
+  msg_queue.push(RTC_UPDATE);
+  msg_queue.push(SAMPLE_AIR);
+  msg_queue.push(OLED_ON);
 }
 
 // the loop function runs over and over again forever
@@ -46,6 +59,7 @@ void loop()
 }
 
 void service_msg_queue() {
+
   while (!msg_queue.empty()) {
     int msg = msg_queue.front();
     Serial.println("Servicing");
@@ -71,10 +85,27 @@ void service_msg_queue() {
         clk->tm_mday = current_clk->tm_mday;
         break;
       }
+      case UPDATE_SAMPLE_PERIOD: {
+        TC4_reconfigure(settings->sample_period_sec);
+      }
       case MOTION_DETECTED: {
+        msg_queue.push(OLED_ON);
+        // TODO send motion data to server
+        oled.set_moition_timestamp();
+        TC3_start_timer();
+        break;
+      }
+      case NO_MOTION: {
+        TC3_stop_timer();
+        msg_queue.push(OLED_OFF);
         break;
       }
       case SEND_SERVER_MSG: {
+        break;
+      }
+      case SAVE_RUNTIME: {
+        oled.set_runtime(thermostat.get_runtime());
+        // TODO send runtime to server
         break;
       }
       case OLED_ON: {

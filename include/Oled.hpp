@@ -45,6 +45,9 @@ public:
 	void on();
 	void off();
 	void rotary_dial(uint8_t direction);
+	void set_runtime(uint32_t runtime);
+	void set_moition_timestamp();
+	u_int32_t get_motion_timestamp();
 	
 private:
 	void oled_draw_logo();
@@ -64,6 +67,8 @@ private:
 	thermostat_settings* m_settings;
 	sensor_readings* m_sensor;
 	tm* m_time;
+	uint32_t m_furnace_runtime;
+	uint32_t m_motion_timestamp;
 	int8_t oled_scroll_counter;
 	int8_t oled_menu_state;
 	int8_t oled_menu_item;

@@ -12,6 +12,8 @@ OLED::OLED(Adafruit_SSD1306* display, tm* clk, thermostat_settings* settings, se
 	oled_menu_state = 1;
 	oled_screen_ON = true;
 	oled_scroll_counter = 0;
+	m_furnace_runtime = 0;
+	m_motion_timestamp = millis();
 	String s;
 }
 
@@ -71,12 +73,14 @@ void OLED::update() {
 void OLED::next_menu() {
 	oled_menu_state++;
 	oled_scroll_counter = 0;
+	m_motion_timestamp = millis();
 	update();
 }
 
 void OLED::previous_menu() {
 	oled_menu_state--;
 	oled_scroll_counter = 0;
+	m_motion_timestamp = millis();
 	update();
 }
 
@@ -91,12 +95,15 @@ void OLED::edit() {
 		Serial.println("Save menu");
 		update_user_settings();
 	}
+	m_motion_timestamp = millis();
 	update();
 }
 
 void OLED::on()
 {
 	oled_screen_ON = true;
+	m_motion_timestamp = millis();
+	update();
 }
 
 void OLED::off() {
@@ -116,8 +123,22 @@ void OLED::rotary_dial(uint8_t direction) {
 		oled_scroll_counter += direction;
 		Serial.println(oled_scroll_counter);
 	}
+	m_motion_timestamp = millis();
 	update();
 }
+
+void OLED::set_runtime(uint32_t runtime) {
+	m_furnace_runtime = runtime;
+}
+
+void OLED::set_moition_timestamp() {
+	m_motion_timestamp = millis();
+}
+
+u_int32_t OLED::get_motion_timestamp() {
+	return m_motion_timestamp;
+}
+
 
 void OLED::menu_set_temperature() {
 	int8_t items[] = { -1, TARGET };
@@ -371,10 +392,11 @@ void OLED::menu_date_and_time() {
 	c[21] = '\0';
 
 	// Draw humidity at line 4
-	m_display->setCursor(1,OLED_LINE_1_Y);
+	m_display->setCursor(1, OLED_LINE_1_Y);
 	m_display->println(c);
 
 	// Draw sync option on line 2
+	m_display->setCursor(1, OLED_LINE_2_Y);
 	m_display->println("Sync RTC Time  'OK'");
 
 	// Switch between edited value and set value
@@ -387,12 +409,8 @@ void OLED::menu_date_and_time() {
 	}
 
 	// Draw sync option on line 2
+	m_display->setCursor(1, OLED_LINE_3_Y);
 	m_display->println(buffer);
-
-	// Draw timezone name
-	char* timezone_name = getenv("TZ");
-	m_display->println(timezone_name);
-
 
 	// Confine the scroll line of the menu
 	bound_scroll_counter(2, 3, 9);
@@ -415,7 +433,8 @@ void OLED::menu_current_cycle() {
 	m_display->setTextSize(FONT_SIZE_LINE);
 
 	// Draw start time on line 1
-	//sprintf(buffer, "Start time %02d:%02d", m_settings->current_cycle->start_hour, m_settings->current_cycle->start_min);
+	sprintf(buffer, "Start time %02d:%02d", m_settings->current_cycle->start_hour, m_settings->current_cycle->start_min);
+	m_display->setCursor(1, OLED_LINE_1_Y);
 	m_display->println(buffer);
 	
 	// Draw end time on line 2
@@ -424,12 +443,13 @@ void OLED::menu_current_cycle() {
 	// 	sprintf(buffer, "End time   %02d:%02d", m_settings->current_cycle->prev->start_hour, m_settings->current_cycle->prev->start_min);
 	// else
 	// 	sprintf(buffer, "End time   %02d:%02d", 0,0);
+	m_display->setCursor(1, OLED_LINE_2_Y);
 	// m_display->println(buffer);
 
 	// Draw runtime on line 3
-	// TODO fix this
-	// sprintf(buffer, "Runtime %d min", furnaceRunTime / 60);
-	// m_display->println(buffer);
+	sprintf(buffer, "Runtime %d min", m_furnace_runtime / 60);
+	m_display->setCursor(1, OLED_LINE_3_Y);
+	m_display->println(buffer);
 
 	// Send the buffer to OLED RAM
 	m_display->display();
@@ -485,8 +505,7 @@ switch (oled_menu_item)
 	case SAMPLEPERIOD:
 	{
 		if (temporary_setting >= 5 && temporary_setting <= 300) {
-			// TODO fix this
-			//reconfigureTimer = true;
+			global_msg_queue->push(UPDATE_SAMPLE_PERIOD);
 			m_settings->sample_period_sec = temporary_setting;
 		}
 	}

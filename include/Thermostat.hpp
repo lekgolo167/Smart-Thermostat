@@ -7,7 +7,7 @@
 #include "Server.hpp"
 #include "Constants.hpp"
 #include "HTU21D.hpp"
-
+#include "MesgQueue.hpp"
 
 struct sensor_readings {
 	float temperature_F;
@@ -34,6 +34,7 @@ public:
 	void run_cycle();
 	void initialize();
 	void sample_air();
+	uint32_t get_runtime();
 private:
 
 	void update_cycle();
