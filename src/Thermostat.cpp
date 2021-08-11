@@ -11,11 +11,12 @@ Thermostat::Thermostat(tm* clk, thermostat_settings* settings, sensor_readings* 
 	m_settings->target_temperature = 70.0;
 	m_settings->sample_period_sec = 30;
 	m_settings->total_samples = 5;
-	m_settings->screen_timeout_sec = 15;
-	m_settings->motion_timeout_sec = 172800;
+	m_settings->screen_timeout_millis = 15 * 1000;
+	m_settings->motion_timeout_millis = 48 * 60 * 60 * 1000;
 
 	m_furnace_ON = false;
 	m_furnace_runtime = 0;
+	m_motion_timestamp = millis();
 
 	int id = -1;
 	for (uint8_t day = 0; day < 7; day++){
@@ -83,9 +84,8 @@ void Thermostat::toggle_furnace_relay(bool power_ON) {
 			global_msg_queue->push(SAVE_RUNTIME);
 		}
 		m_furnace_ON = power_ON;
-		// TODO send furnace state to server
+		global_msg_queue->push(SEND_SERVER_FURNACE_STATE);
 	}
-
 }
 
 float Thermostat::calc_avg_room_temperature() {
@@ -108,10 +108,13 @@ void Thermostat::sample_air() {
 }
 
 bool Thermostat::motion_timeout_check() {
+	if (millis() - m_motion_timestamp > m_settings->motion_timeout_millis) {
+    	return false;
+  	}
 	return true;
 }
 
-bool Thermostat::check_server_for_updates() {
+void Thermostat::check_server_for_updates() {
 	int server_IDs[7];
 
 	get_day_IDs(server_IDs);
@@ -134,4 +137,12 @@ void Thermostat::stop_tempoaray_timer() {
 
 uint32_t Thermostat::get_runtime() {
 	return m_furnace_runtime;
+}
+
+void Thermostat::set_moition_timestamp() {
+	m_motion_timestamp = millis();
+}
+
+uint32_t Thermostat::get_motion_timestamp() {
+	return m_motion_timestamp;
 }

@@ -27,7 +27,7 @@ void TC4_Handler (void) {
 
 void TC3_Handler(void) {
   // USER CODE HERE
-  if (millis() - oled.get_motion_timestamp() > settings->screen_timeout_sec) {
+  if (millis() - thermostat.get_motion_timestamp() > settings->screen_timeout_millis) {
     msg_queue.push(NO_MOTION);
   }
   // END OF USER CODE
@@ -90,8 +90,8 @@ void service_msg_queue() {
       }
       case MOTION_DETECTED: {
         msg_queue.push(OLED_ON);
-        // TODO send motion data to server
-        oled.set_moition_timestamp();
+        msg_queue.push(SEND_SERVER_MOTION);
+        thermostat.set_moition_timestamp();
         TC3_start_timer();
         break;
       }
@@ -109,6 +109,7 @@ void service_msg_queue() {
         break;
       }
       case OLED_ON: {
+        thermostat.set_moition_timestamp();
         oled.on();
         break;
       }
@@ -121,22 +122,27 @@ void service_msg_queue() {
         break;
       }
       case OLED_NEXT_MENU: {
+        thermostat.set_moition_timestamp();
         oled.next_menu();
         break;
       }
       case OLED_PREV_MENU: {
+        thermostat.set_moition_timestamp();
         oled.previous_menu();
         break;
       }
       case OLED_EDIT_MENU: {
+        thermostat.set_moition_timestamp();
         oled.edit();
         break;
       }
       case OLED_ROTARY_CCW: {
+        thermostat.set_moition_timestamp();
         oled.rotary_dial(-1);
         break;
       }
       case OLED_ROTARY_CW: {
+        thermostat.set_moition_timestamp();
         oled.rotary_dial(1);
         break;
       }

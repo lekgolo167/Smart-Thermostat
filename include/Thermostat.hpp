@@ -22,8 +22,8 @@ struct thermostat_settings {
 	float upper_threshold;
 	float baseline_temperature;
 	uint16_t sample_period_sec;
-	uint16_t screen_timeout_sec;
-	uint32_t motion_timeout_sec;
+	uint16_t screen_timeout_millis;
+	uint32_t motion_timeout_millis;
 	uint8_t total_samples;
 	cycle_t* current_cycle;
 };
@@ -35,10 +35,13 @@ public:
 	void initialize();
 	void sample_air();
 	uint32_t get_runtime();
+	void set_moition_timestamp();
+	uint32_t get_motion_timestamp();
+
 private:
 
 	void update_cycle();
-	bool check_server_for_updates();
+	void check_server_for_updates();
 	bool motion_timeout_check();
 	void stop_tempoaray_timer();
 	void toggle_furnace_relay(bool power_ON);
@@ -52,6 +55,7 @@ private:
 	float m_temperatures_sum;
 	int m_sample_avg_index;
 	bool m_furnace_ON;
+	uint32_t m_motion_timestamp;
 	uint32_t m_furnace_start_time;
 	uint32_t m_furnace_runtime;
 	CycleList* m_days[7];

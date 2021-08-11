@@ -13,7 +13,6 @@ OLED::OLED(Adafruit_SSD1306* display, tm* clk, thermostat_settings* settings, se
 	oled_screen_ON = true;
 	oled_scroll_counter = 0;
 	m_furnace_runtime = 0;
-	m_motion_timestamp = millis();
 	String s;
 }
 
@@ -73,14 +72,12 @@ void OLED::update() {
 void OLED::next_menu() {
 	oled_menu_state++;
 	oled_scroll_counter = 0;
-	m_motion_timestamp = millis();
 	update();
 }
 
 void OLED::previous_menu() {
 	oled_menu_state--;
 	oled_scroll_counter = 0;
-	m_motion_timestamp = millis();
 	update();
 }
 
@@ -88,21 +85,17 @@ void OLED::edit() {
 	edit_oled_menu = !edit_oled_menu;
 
 	if(edit_oled_menu) { 	// If editing, get the corrisponding variable and copy it to a temporary variable
-		Serial.println("Edit menu");
 		update_temporary_setting_value();
 	}
 	else { // If not editing set the temporary to the corrisponding var
-		Serial.println("Save menu");
 		update_user_settings();
 	}
-	m_motion_timestamp = millis();
 	update();
 }
 
 void OLED::on()
 {
 	oled_screen_ON = true;
-	m_motion_timestamp = millis();
 	update();
 }
 
@@ -114,31 +107,17 @@ void OLED::off() {
 
 void OLED::rotary_dial(uint8_t direction) {
 	if (edit_oled_menu) {
-		Serial.print("Temporary: ");
 		temporary_setting += direction;
-		Serial.println(temporary_setting);
 	}
 	else {
-		Serial.print("Scroll counter: ");
 		oled_scroll_counter += direction;
-		Serial.println(oled_scroll_counter);
 	}
-	m_motion_timestamp = millis();
 	update();
 }
 
 void OLED::set_runtime(uint32_t runtime) {
 	m_furnace_runtime = runtime;
 }
-
-void OLED::set_moition_timestamp() {
-	m_motion_timestamp = millis();
-}
-
-u_int32_t OLED::get_motion_timestamp() {
-	return m_motion_timestamp;
-}
-
 
 void OLED::menu_set_temperature() {
 	int8_t items[] = { -1, TARGET };
@@ -339,7 +318,7 @@ void OLED::menu_motion_settings() {
 		sprintf(buffer, "Screen Timeout: %ds", temporary_setting);
 	}
 	else {
-		sprintf(buffer, "Screen Timeout: %ds", m_settings->screen_timeout_sec);
+		sprintf(buffer, "Screen Timeout: %ds", m_settings->screen_timeout_millis);
 	}
 	// Draw a screen timeout at line 1
 	m_display->setCursor(1,OLED_LINE_1_Y);
@@ -351,7 +330,7 @@ void OLED::menu_motion_settings() {
 	}
 	else {
 		// Also, covnert seconds to hours
-		sprintf(buffer, "Away Time: %d hr", m_settings->motion_timeout_sec / 3600);
+		sprintf(buffer, "Away Time: %d hr", m_settings->motion_timeout_millis / 3600);
 	}
 	// Draw away time at line 2
 	m_display->setCursor(1,OLED_LINE_2_Y);
@@ -513,13 +492,13 @@ switch (oled_menu_item)
 	case SCREENTIMEOUT:
 	{
 		if (temporary_setting >= 1 && temporary_setting <= 180)
-			m_settings->screen_timeout_sec = temporary_setting;
+			m_settings->screen_timeout_millis = temporary_setting;
 	}
 	break;
 	case MOTIONDETECTION:
 	{
 		if(temporary_setting >= 6 && temporary_setting <= 96)
-			m_settings->motion_timeout_sec = temporary_setting * 3600; // convert to seconds from hours
+			m_settings->motion_timeout_millis = temporary_setting * 3600; // convert to seconds from hours
 	}
 	case CHANGEHOUR:
 	{
@@ -573,12 +552,12 @@ switch (oled_menu_item)
 	break;
 	case SCREENTIMEOUT:
 	{
-		temporary_setting = m_settings->screen_timeout_sec;
+		temporary_setting = m_settings->screen_timeout_millis;
 	}
 	break;
 	case MOTIONDETECTION:
 	{
-		temporary_setting = m_settings->motion_timeout_sec/3600; // convert from seconds to hours
+		temporary_setting = m_settings->motion_timeout_millis/3600; // convert from seconds to hours
 	}
 	break;
 	case CHANGEHOUR:

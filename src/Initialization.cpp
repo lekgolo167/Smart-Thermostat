@@ -3,17 +3,14 @@
 #include "MesgQueue.hpp"
 
 static void isr_button_A() {
-	Serial.println("Forward");
   global_msg_queue->push(OLED_NEXT_MENU);
 }
 
 static void isr_button_B() {
-	Serial.println("Back");
   global_msg_queue->push(OLED_PREV_MENU);
 }
 
 static void isr_rotary_btn() {
-  Serial.println("Edit");
   global_msg_queue->push(OLED_EDIT_MENU);
 }
 
@@ -22,17 +19,11 @@ static void isr_rotary() {
 	PinStatus rotary_A_state = digitalRead(ROTARY_A_PIN);
 	PinStatus rotary_B_state = digitalRead(ROTARY_B_PIN);
 
-	Serial.print("A: ");
-	Serial.print(rotary_A_state);
-	Serial.print(", B: ");
-	Serial.print(rotary_B_state);
 	if (rotary_A_state && !rotary_B_state) { // CCW
     global_msg_queue->push(OLED_ROTARY_CCW);
-		Serial.println("--");
 	}
 	else if (rotary_A_state && rotary_B_state) { // CW
     global_msg_queue->push(OLED_ROTARY_CW);
-		Serial.println("++");
 	}
 
 }
@@ -78,6 +69,7 @@ void initTimers()
   TC4_start_timer();
 
   TC3_configure(3);
+  TC3_start_timer();
 }
 
 void initWiFi()
