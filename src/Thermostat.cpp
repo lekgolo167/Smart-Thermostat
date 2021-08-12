@@ -81,7 +81,7 @@ void Thermostat::toggle_furnace_relay(bool power_ON) {
 		else {
 			m_furnace_runtime = (millis() - m_furnace_start_time) / 1000; // convert to seconds
 			digitalWrite(FURNACE_RELAY_PIN, LOW);
-			global_msg_queue->push(SAVE_RUNTIME);
+			global_msg_queue->push(SEND_SEVER_RUNTIME);
 		}
 		m_furnace_ON = power_ON;
 		global_msg_queue->push(SEND_SERVER_FURNACE_STATE);

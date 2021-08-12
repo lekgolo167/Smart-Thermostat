@@ -1,7 +1,7 @@
 #pragma once
 
-// #include <WiFi.h>
-// #include <HTTPClient.h>
+#include <ArduinoHttpClient.h>
+#include <WiFiNINA.h>
 
 void get_day_IDs(int* server_IDs);
 

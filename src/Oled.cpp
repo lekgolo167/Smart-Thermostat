@@ -446,8 +446,7 @@ switch (oled_menu_item)
 			// m_settings->temporaryTarget = m_settings->targetTemp_F;
 			m_settings->target_temperature = temporary_setting;
 			// startTemporaryTimer = true;
-			//sprintf(CURLMessageBuffer, "TARGET=%f&THRESH_L=%f&THRESH_H=%f", m_settings->targetTemp_F, m_settings->lower_threshold, m_settings->upper_threshold);
-			//sendCURL(URL_STATS, CURLMessageBuffer);
+			global_msg_queue->push(SEND_SERVER_STATS);
 		}
 	}
 	break;
@@ -455,8 +454,7 @@ switch (oled_menu_item)
 	{
 		if (temporary_setting >= 0 && temporary_setting <= 5) {
 			m_settings->lower_threshold = temporary_setting;
-			//sprintf(CURLMessageBuffer, "TARGET=%f&THRESH_L=%f&THRESH_H=%f", m_settings->targetTemp_F, m_settings->lower_threshold, m_settings->upper_threshold);
-			//sendCURL(URL_STATS, CURLMessageBuffer);
+			global_msg_queue->push(SEND_SERVER_STATS);
 		}
 	}
 	break;
@@ -464,8 +462,7 @@ switch (oled_menu_item)
 	{
 		if (temporary_setting >= 0 && temporary_setting <= 5) {
 			m_settings->upper_threshold = temporary_setting;
-			//sprintf(CURLMessageBuffer, "TARGET=%f&THRESH_L=%f&THRESH_H=%f", m_settings->targetTemp_F, m_settings->lower_threshold, m_settings->upper_threshold);
-			//sendCURL(URL_STATS, CURLMessageBuffer);
+			global_msg_queue->push(SEND_SERVER_STATS);
 		}
 	}
 	break;
@@ -479,26 +476,27 @@ switch (oled_menu_item)
 	{
 		if (temporary_setting >= 1 && temporary_setting <= 20)
 			m_settings->total_samples = temporary_setting;
+			global_msg_queue->push(UPDATE_SAMPLE_SUM);
 	}
 	break;
 	case SAMPLEPERIOD:
 	{
 		if (temporary_setting >= 5 && temporary_setting <= 300) {
-			global_msg_queue->push(UPDATE_SAMPLE_PERIOD);
 			m_settings->sample_period_sec = temporary_setting;
+			global_msg_queue->push(UPDATE_SAMPLE_PERIOD);
 		}
 	}
 	break;
 	case SCREENTIMEOUT:
 	{
 		if (temporary_setting >= 1 && temporary_setting <= 180)
-			m_settings->screen_timeout_millis = temporary_setting;
+			m_settings->screen_timeout_millis = temporary_setting * 1000;
 	}
 	break;
 	case MOTIONDETECTION:
 	{
 		if(temporary_setting >= 6 && temporary_setting <= 96)
-			m_settings->motion_timeout_millis = temporary_setting * 3600; // convert to seconds from hours
+			m_settings->motion_timeout_millis = temporary_setting * 3600 * 1000; // convert to milliseconds from hours
 	}
 	case CHANGEHOUR:
 	{
@@ -552,12 +550,12 @@ switch (oled_menu_item)
 	break;
 	case SCREENTIMEOUT:
 	{
-		temporary_setting = m_settings->screen_timeout_millis;
+		temporary_setting = m_settings->screen_timeout_millis / 1000;
 	}
 	break;
 	case MOTIONDETECTION:
 	{
-		temporary_setting = m_settings->motion_timeout_millis/3600; // convert from seconds to hours
+		temporary_setting = m_settings->motion_timeout_millis / (3600 * 1000); // convert from seconds to hours
 	}
 	break;
 	case CHANGEHOUR:
@@ -662,11 +660,11 @@ const uint8_t Image_avnet_bmp[BUFFER_SIZE] =
 	0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
 	0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
 };
+
 void OLED::oled_draw_logo() {
 	m_display->clearDisplay();
 	// Copy image_avnet to OLED buffer
 	m_display->drawBitmap(0,0,Image_avnet_bmp,128,64,SSD1306_WHITE);
 	// Send the buffer to OLED RAM
 	m_display->display();
-
 }

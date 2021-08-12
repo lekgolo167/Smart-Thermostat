@@ -100,12 +100,22 @@ void service_msg_queue() {
         msg_queue.push(OLED_OFF);
         break;
       }
-      case SEND_SERVER_MSG: {
+      case SEND_SERVER_TEMPERATURE: {
         break;
       }
-      case SAVE_RUNTIME: {
+      case SEND_SERVER_STATS: {
+        //sprintf(CURLMessageBuffer, "TARGET=%f&THRESH_L=%f&THRESH_H=%f", m_settings->targetTemp_F, m_settings->lower_threshold, m_settings->upper_threshold);
+			//sendCURL(URL_STATS, CURLMessageBuffer);
+        break;
+      }
+      case SEND_SERVER_MOTION: {
+        break;
+      }
+      case SEND_SEVER_RUNTIME: {
         oled.set_runtime(thermostat.get_runtime());
-        // TODO send runtime to server
+        break;
+      }
+      case SEND_SERVER_FURNACE_STATE: {
         break;
       }
       case OLED_ON: {
