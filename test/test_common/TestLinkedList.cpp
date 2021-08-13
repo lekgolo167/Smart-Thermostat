@@ -1,5 +1,7 @@
 #include <unity.h>
 
+#include "CycleList.hpp"
+
 // void setUp(void) {
 // // set stuff up here
 // }
@@ -9,7 +11,8 @@
 // }
 
 void test_linked_list_insert(void) {
-    //TEST_ASSERT_EQUAL();
+    CycleList cycle_list = CycleList();
+    TEST_ASSERT_EQUAL(0, cycle_list.size());
 }
 
 int main(int argc, char **argv) {
