@@ -100,8 +100,8 @@ public:
 	LinkedList(const LinkedList & rhs)
 	{
 		init();
-		for (auto & x : rhs)
-			push_back(x);
+		// for (auto & x : rhs)
+		// 	push_back(x);
 	}
 	LinkedList(LinkedList && rhs) : theSize{rhs.theSize}, head{rhs.head}, tail{rhs.tail}
 	{
