@@ -1,8 +1,14 @@
 #pragma once
 
-#include <ArduinoHttpClient.h>
 #include <WiFiNINA.h>
+#include <WIFIUdp.h>
 
-void get_day_IDs(int* server_IDs);
+#include "Constants.hpp"
 
-// void send_data(char* msg);
+void post_request(char *url, char *msg);
+
+int get_request(const char *path, char *buffer, size_t size);
+
+float get_temporary_temperature();
+
+void get_day_ids(int *id_array);

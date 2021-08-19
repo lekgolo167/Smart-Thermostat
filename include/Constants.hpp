@@ -20,11 +20,16 @@ const uint8_t MOTION_SENSOR_PIN = 11;
 // I2C
 const uint32_t I2C_FREQ = 400000;
 
-// IP address of server
-#define IP_ADDRESS_AND_PORT "192.168.0.27:1880"
+// Local listening port
+const uint16_t LOCAL_PORT = 2390;
 
-#define URL_TEMPERATURE IP_ADDRESS_AND_PORT "/temp"
-#define URL_STATS IP_ADDRESS_AND_PORT "/stats"
-#define URL_MOTION IP_ADDRESS_AND_PORT "/motion"
-#define URL_RUNTIME IP_ADDRESS_AND_PORT "/runtime"
-#define URL_FURNANCE_STATE IP_ADDRESS_AND_PORT "/furnaceState"
+// IP address of server
+const u_int16_t SERVER_PORT = 5000;
+const inline char* SERVER_ADDRESS = "192.168.0.238";
+const inline char* URL_GET_TEMPORARY = "/getTemporary";
+const inline char* URL_GET_DAY_IDS = "/getDayIDs";
+const inline char* URL_TEMPERATURE = "/temp";
+const inline char* URL_STATS = "/stats";
+const inline char* URL_MOTION = "/motion";
+const inline char* URL_RUNTIME = "/runtime";
+const inline char* URL_FURNANCE_STATE = "/furnaceState";
