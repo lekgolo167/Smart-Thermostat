@@ -52,8 +52,6 @@ void Thermostat::update_cycle()
 	{
 		m_settings->current_cycle = loaded_cycle;
 		m_settings->target_temperature = loaded_cycle->temp_F;
-
-		// TODO stop temporary timer
 	}
 }
 
@@ -143,12 +141,19 @@ void Thermostat::update_schedule()
 	{
 		if (server_IDs[day] != m_days[day]->m_dayID)
 		{
-
+			m_days[day]->m_dayID = server_IDs[day];
 			m_days[day]->update_cycles(day);
 
 			if (m_time->tm_wday == day)
 			{
+				// invalidate ID, forces update incase only the temperature was changed
+				// as the ID remains the same if the time/temperature is updated on the server
+				m_settings->current_cycle->id = -1;
 				// if the day changed is today update settings current cycle pointer
+				update_cycle();
+				// stop temporary timer
+				m_override_ON = false;
+				global_msg_queue->push(SEND_SERVER_STATS);
 			}
 		}
 	}

@@ -43,7 +43,6 @@ void TC3_Handler(void)
 }
 
 void service_msg_queue();
-void printWifiStatus();
 
 void setup()
 {
@@ -54,7 +53,6 @@ void setup()
   initI2C();
   initTimers();
   initWiFi(udp);
-  printWifiStatus();
   initRTC(rtc);
   thermostat.initialize();
   msg_queue.push(RTC_UPDATE);
@@ -104,6 +102,10 @@ void service_msg_queue()
     case UPDATE_SAMPLE_PERIOD:
     {
       TC4_reconfigure(settings->sample_period_sec);
+    }
+    case UPDATE_SAMPLE_SUM:
+    {
+
     }
     case MOTION_DETECTED:
     {

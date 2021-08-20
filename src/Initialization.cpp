@@ -79,7 +79,10 @@ void initTimers()
 
 void initWiFi(WiFiUDP &udp)
 {
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  Serial.print("WIFI status: ");
+  Serial.println(WiFi.begin(WIFI_SSID, WIFI_PASSWORD));
+  Serial.print("UDP status: ");
+  Serial.println(udp.begin(LOCAL_PORT));
 }
 
 void initRTC(RTCZero &rtc)

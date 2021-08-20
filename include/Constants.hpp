@@ -28,6 +28,7 @@ const u_int16_t SERVER_PORT = 5000;
 const inline char* SERVER_ADDRESS = "192.168.0.238";
 const inline char* URL_GET_TEMPORARY = "/getTemporary";
 const inline char* URL_GET_DAY_IDS = "/getDayIDs";
+const inline char* URL_GET_CYCLES = "/getCycles/%d";
 const inline char* URL_TEMPERATURE = "/temp";
 const inline char* URL_STATS = "/stats";
 const inline char* URL_MOTION = "/motion";

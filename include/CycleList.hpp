@@ -3,6 +3,8 @@
 #include <stdint.h>
 
 #include "LinkedList.hpp"
+#include "Server.hpp"
+#include "parson.h"
 
 typedef struct cycle
 {
