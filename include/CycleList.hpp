@@ -10,7 +10,9 @@ typedef struct cycle
 {
 	int id;
 	int start_hour;
+	int end_hour;
 	int start_min;
+	int end_min;
 	float temp_F;
 } cycle_t;
 

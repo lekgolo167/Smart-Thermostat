@@ -24,7 +24,7 @@ Thermostat::Thermostat(tm *clk, thermostat_settings *settings, sensor_readings *
 	for (uint8_t day = 0; day < 7; day++)
 	{
 		m_days[day] = new CycleList();
-		m_days[day]->push_back(cycle{id--, 0, 0, 60.0});
+		m_days[day]->push_back(cycle{id--, 0, 0, 0, 0, 60.0});
 	}
 }
 

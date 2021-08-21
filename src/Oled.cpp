@@ -489,13 +489,9 @@ void OLED::menu_current_cycle()
 	m_display->println(buffer);
 
 	// Draw end time on line 2
-	// TODO fix this
-	// if (m_settings->current_cycle->prev != NULL)
-	// 	sprintf(buffer, "End time   %02d:%02d", m_settings->current_cycle->prev->start_hour, m_settings->current_cycle->prev->start_min);
-	// else
-	// 	sprintf(buffer, "End time   %02d:%02d", 0,0);
+	sprintf(buffer, "End time   %02d:%02d", m_settings->current_cycle->end_hour, m_settings->current_cycle->end_min);
 	m_display->setCursor(1, OLED_LINE_2_Y);
-	// m_display->println(buffer);
+	m_display->println(buffer);
 
 	// Draw runtime on line 3
 	sprintf(buffer, "Runtime %d min", m_furnace_runtime / 60);

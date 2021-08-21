@@ -62,4 +62,15 @@ void CycleList::update_cycles(uint8_t day)
 		this->push_front(c);
 	}
 	json_value_free(raw);
+
+	int last_start_hour = 0;
+	int last_start_min = 0;
+	for (auto current : *this)
+	{
+		current->end_hour = last_start_hour;
+		current->end_min = last_start_min;
+
+		last_start_hour = current->start_hour;
+		last_start_min = current->start_min;
+	}
 }
