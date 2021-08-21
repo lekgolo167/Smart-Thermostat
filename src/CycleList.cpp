@@ -33,17 +33,23 @@ cycle_t *CycleList::find_next_cycle(uint8_t hr, uint8_t min)
 
 void CycleList::update_cycles(uint8_t day)
 {
-	this->clear();
 	char buffer[1024];
+	
 	sprintf(buffer, URL_GET_CYCLES, day);
-	get_request(buffer, buffer, 1024);
+
+	int result = get_request(buffer, buffer, 1024);
+	if (result < 1) {
+		// request failed
+		return;
+	}
+	// if successful, clear the cycle list
+	this->clear();
 
 	JSON_Value* raw = json_parse_string(buffer);
 	JSON_Object* obj = json_value_get_object(raw);
 	JSON_Array* cycles_array = json_object_get_array(obj, "cycles");
 
 	int count = json_array_get_count(cycles_array);
-	Serial.print("COUNT: ");
 	Serial.println(count);
 	for (int i = 0; i < count; i++) {
 		cycle c;
@@ -54,10 +60,6 @@ void CycleList::update_cycles(uint8_t day)
 		c.start_min = (int)json_object_get_number(cycle_obj, "m");
 		c.temp_F = (float)json_object_get_number(cycle_obj, "t");
 		this->push_front(c);
-		Serial.print("Pused Back: ");
-		Serial.println(c.id);
 	}
-	Serial.print("Pointer ---");
-	Serial.println(this->find_next_cycle(0,0)->id);
 	json_value_free(raw);
 }

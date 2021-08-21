@@ -24,7 +24,7 @@ Thermostat::Thermostat(tm *clk, thermostat_settings *settings, sensor_readings *
 	for (uint8_t day = 0; day < 7; day++)
 	{
 		m_days[day] = new CycleList();
-		m_days[day]->push_back(*new cycle{id--, 0, 0, 60.0});
+		m_days[day]->push_back(cycle{id--, 0, 0, 60.0});
 	}
 }
 
@@ -51,7 +51,13 @@ void Thermostat::update_cycle()
 	if (loaded_cycle->id != m_settings->current_cycle->id)
 	{
 		m_settings->current_cycle = loaded_cycle;
-		m_settings->target_temperature = loaded_cycle->temp_F;
+		if (!m_override_ON) {
+			m_settings->target_temperature = loaded_cycle->temp_F;
+
+			global_msg_queue->push(SEND_SERVER_STATS);
+		}
+		// temporary solution to keep rtc time correct as it loses 24 minutes per day
+		global_msg_queue->push(GET_EPOCH);
 	}
 }
 
@@ -146,23 +152,27 @@ void Thermostat::update_schedule()
 
 			if (m_time->tm_wday == day)
 			{
-				// invalidate ID, forces update incase only the temperature was changed
-				// as the ID remains the same if the time/temperature is updated on the server
-				m_settings->current_cycle->id = -1;
 				// if the day changed is today update settings current cycle pointer
-				update_cycle();
-				// stop temporary timer
-				m_override_ON = false;
-				global_msg_queue->push(SEND_SERVER_STATS);
-			}
+				uint8_t today = m_time->tm_wday;
+				cycle *loaded_cycle = m_days[today]->find_next_cycle(m_time->tm_hour, m_time->tm_min);
+
+				m_settings->current_cycle = loaded_cycle;
+
+				if (!m_override_ON) {
+					m_settings->target_temperature = loaded_cycle->temp_F;
+
+					global_msg_queue->push(SEND_SERVER_STATS);
+				}
+			} // end if (day == today)
 		}
-	}
+	} // end for loop
 }
 
 void Thermostat::manage_temporary_override() {
 		if (m_override_ON && millis() - m_temporary_start_time > m_settings->override_timeout_millis) {
 			m_override_ON = false;
-			m_settings->target_temperature = m_settings->temporary_target;
+			m_settings->target_temperature = m_settings->current_cycle->temp_F;
+			global_msg_queue->push(SEND_SERVER_STATS);
 		}
 }
 
@@ -170,9 +180,10 @@ void Thermostat::start_temporary_override()
 {
 	m_override_ON = true;
 	m_temporary_start_time = millis();
-	float old_temp = m_settings->target_temperature;
-	m_settings->target_temperature = m_settings->temporary_target;
-	m_settings->temporary_target = old_temp;
+}
+
+bool Thermostat::get_furnace_state() {
+	return m_furnace_ON;
 }
 
 uint32_t Thermostat::get_runtime()

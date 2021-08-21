@@ -20,7 +20,6 @@ struct sensor_readings
 struct thermostat_settings
 {
 	float target_temperature;
-	float temporary_target;
 	float lower_threshold;
 	float upper_threshold;
 	float baseline_temperature;
@@ -41,6 +40,7 @@ public:
 	void sample_air();
 	void update_schedule();
 	uint32_t get_runtime();
+	bool get_furnace_state();
 	void start_temporary_override();
 	void set_moition_timestamp();
 	uint32_t get_motion_timestamp();

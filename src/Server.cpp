@@ -1,8 +1,32 @@
 #include "Server.hpp"
 #include "parson.h"
 
-void post_request(char *url, char *msg)
+void post_request(const char *path, char *msg, int len)
 {
+	// Prepare the client
+	WiFiClient client;
+
+	// Connect to the server
+	if (client.connect(SERVER_ADDRESS, SERVER_POST_PORT))
+	{
+		// Connection established
+		client.print("POST ");
+		client.print(path);
+		client.println(" HTTP/1.1");
+		client.print("Host: ");
+		client.print(SERVER_ADDRESS);
+		client.print(":");
+		client.println(SERVER_POST_PORT);
+		client.println("Content-Type: application/x-www-form-urlencoded");
+		client.print("Content-Length: ");
+		client.println(len);
+		client.println();
+		client.println(msg);
+		client.println();
+	}
+
+	client.stop();
+		
 }
 
 int get_request(const char *path, char *buffer, size_t size)
@@ -22,12 +46,12 @@ int get_request(const char *path, char *buffer, size_t size)
 		client.print(SERVER_ADDRESS);
 		client.print(":");
 		client.println(SERVER_PORT);
-		//client.println("Connection: close");
 		client.println();
 	}
 	else
 	{
 		// Failed dot connect
+		Serial.println("FAILED TO CONNECT");
 		client.stop();
 		return -1;
 	}
@@ -97,4 +121,17 @@ void get_day_ids(int *id_array)
 		}
 		json_value_free(raw);
 	}
+}
+
+uint32_t get_epoch() {
+	char buffer[256];
+	uint32_t epoch = 0;
+	if (get_request(URL_GET_EPOCH, buffer, 256) > 0)
+	{
+		JSON_Value *raw = json_parse_string(buffer);
+		JSON_Object *obj = json_value_get_object(raw);
+		epoch = (uint32_t)json_object_get_number(obj, "epoch");
+		json_value_free(raw);
+	}
+	return epoch;
 }

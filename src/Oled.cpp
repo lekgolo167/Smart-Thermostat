@@ -85,30 +85,49 @@ void OLED::update()
 
 void OLED::next_menu()
 {
-	oled_menu_state++;
-	oled_scroll_counter = 0;
+	if (oled_screen_ON)
+	{
+		oled_menu_state++;
+		oled_scroll_counter = 0;
+		edit_oled_menu = false;
+		oled_menu_item = -1;
+	}
+
+	oled_screen_ON = true;
 	update();
 }
 
 void OLED::previous_menu()
 {
-	oled_menu_state--;
-	oled_scroll_counter = 0;
+	if (oled_screen_ON)
+	{
+		oled_menu_state--;
+		oled_scroll_counter = 0;
+		edit_oled_menu = false;
+		oled_menu_item = -1;
+	}
+
+	oled_screen_ON = true;
 	update();
 }
 
 void OLED::edit()
 {
-	edit_oled_menu = !edit_oled_menu;
+	if (oled_screen_ON)
+	{
+		edit_oled_menu = !edit_oled_menu;
 
-	if (edit_oled_menu)
-	{ // If editing, get the corrisponding variable and copy it to a temporary variable
-		update_temporary_setting_value();
+		if (edit_oled_menu)
+		{ // If editing, get the corrisponding variable and copy it to a temporary variable
+			update_temporary_setting_value();
+		}
+		else
+		{ // If not editing set the temporary to the corrisponding var
+			update_user_settings();
+		}
 	}
-	else
-	{ // If not editing set the temporary to the corrisponding var
-		update_user_settings();
-	}
+
+	oled_screen_ON = true;
 	update();
 }
 
@@ -127,13 +146,20 @@ void OLED::off()
 
 void OLED::rotary_dial(uint8_t direction)
 {
-	if (edit_oled_menu)
+	if (oled_screen_ON)
 	{
-		temporary_setting += direction;
+		if (edit_oled_menu)
+		{
+			temporary_setting += direction;
+		}
+		else
+		{
+			oled_scroll_counter += direction;
+		}
 	}
 	else
 	{
-		oled_scroll_counter += direction;
+		oled_screen_ON = true;
 	}
 	update();
 }
@@ -437,7 +463,7 @@ void OLED::menu_date_and_time()
 	m_display->println("Sync RTC Time  'OK'");
 
 	// Confine the scroll line of the menu
-	bound_scroll_counter(1, 2, 9);
+	bound_scroll_counter(2, 2, 9);
 
 	// Save which item we are editing
 	oled_menu_item = items[oled_scroll_counter];
@@ -488,7 +514,7 @@ void OLED::update_user_settings()
 	{
 		if (temporary_setting >= m_settings->baseline_temperature && temporary_setting <= 95)
 		{
-			m_settings->temporary_target = temporary_setting;
+			m_settings->target_temperature = temporary_setting;
 			global_msg_queue->push(START_TEMPORARY_OVERRIDE);
 			global_msg_queue->push(SEND_SERVER_STATS);
 		}
@@ -608,6 +634,7 @@ void OLED::update_temporary_setting_value()
 	case SYNCRTC:
 	{
 		global_msg_queue->push(GET_EPOCH);
+		global_msg_queue->push(RTC_UPDATE);
 	}
 	break;
 	default:

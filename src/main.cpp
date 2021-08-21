@@ -43,6 +43,7 @@ void TC3_Handler(void)
 }
 
 void service_msg_queue();
+void printWifiStatus();
 
 void setup()
 {
@@ -53,10 +54,13 @@ void setup()
   initI2C();
   initTimers();
   initWiFi(udp);
+  printWifiStatus();
   initRTC(rtc);
   thermostat.initialize();
+  msg_queue.push(GET_EPOCH);
   msg_queue.push(RTC_UPDATE);
   msg_queue.push(SAMPLE_AIR);
+  msg_queue.push(UPDATE_SCHEDULE);
   msg_queue.push(OLED_ON);
 }
 
@@ -82,6 +86,7 @@ void service_msg_queue()
       thermostat.run_cycle();
       msg_queue.push(OLED_UPDATE);
       msg_queue.push(CHECK_FOR_UDP_MSG);
+      msg_queue.push(SEND_SERVER_TEMPERATURE);
       break;
     }
     case RTC_UPDATE:
@@ -99,13 +104,20 @@ void service_msg_queue()
       clk->tm_mday = current_clk->tm_mday;
       break;
     }
+    case GET_EPOCH:
+    {
+      uint32_t epoch = get_epoch();
+      if (epoch) {
+        rtc.setEpoch(epoch);
+      }
+    }
     case UPDATE_SAMPLE_PERIOD:
     {
       TC4_reconfigure(settings->sample_period_sec);
     }
     case UPDATE_SAMPLE_SUM:
     {
-
+      break;
     }
     case MOTION_DETECTED:
     {
@@ -121,21 +133,25 @@ void service_msg_queue()
       msg_queue.push(OLED_OFF);
       break;
     }
+    case START_SCREEN_TIMEOUT:
+    {
+      thermostat.set_moition_timestamp();
+      TC3_start_timer();
+      break;
+    }
     case CHECK_FOR_UDP_MSG:
     {
       int packet_size = udp.parsePacket();
       if (packet_size)
       {
-
         // read the packet into packetBufffer
-
         int len = udp.read(packetBuffer, BUFF_SIZE);
 
         if (len > 0)
         {
-
           packetBuffer[len] = 0;
           int msg = atoi(packetBuffer);
+
           if (msg == 1)
           {
             msg_queue.push(GET_TEMPORARY_OVERRIDE);
@@ -145,10 +161,6 @@ void service_msg_queue()
             msg_queue.push(UPDATE_SCHEDULE);
           }
         }
-
-        Serial.println("Contents:");
-
-        Serial.println(packetBuffer);
       }
       break;
     }
@@ -167,36 +179,44 @@ void service_msg_queue()
       float temperature = get_temporary_temperature();
       if (temperature > 0.0)
       {
-        settings->temporary_target = temperature;
+        settings->target_temperature = temperature;
         msg_queue.push(START_TEMPORARY_OVERRIDE);
+        msg_queue.push(SEND_SERVER_STATS);
       }
     }
     case SEND_SERVER_TEMPERATURE:
     {
+      int len = sprintf(packetBuffer, POST_TEMPERATURE, sensor->temperature_F, sensor->humidity);
+      post_request(URL_TEMPERATURE, packetBuffer, len);
       break;
     }
     case SEND_SERVER_STATS:
     {
-      //sprintf(CURLMessageBuffer, "TARGET=%f&THRESH_L=%f&THRESH_H=%f", m_settings->targetTemp_F, m_settings->lower_threshold, m_settings->upper_threshold);
-      //sendCURL(URL_STATS, CURLMessageBuffer);
+      int len = sprintf(packetBuffer, POST_STATS, settings->target_temperature, settings->lower_threshold, settings->upper_threshold);
+      post_request(URL_STATS, packetBuffer, len);
       break;
     }
     case SEND_SERVER_MOTION:
     {
+      int len = sprintf(packetBuffer, POST_MOTION, 1);
+      post_request(URL_MOTION, packetBuffer, len);
       break;
     }
     case SEND_SEVER_RUNTIME:
     {
       oled.set_runtime(thermostat.get_runtime());
+      int len = sprintf(packetBuffer, POST_RUNTIME, thermostat.get_runtime());
+      post_request(URL_STATS, packetBuffer, len);
       break;
     }
     case SEND_SERVER_FURNACE_STATE:
     {
+      int len = sprintf(packetBuffer, POST_FURNACE_STATE, thermostat.get_furnace_state());
+      post_request(URL_STATS, packetBuffer, len);
       break;
     }
     case OLED_ON:
     {
-      thermostat.set_moition_timestamp();
       oled.on();
       break;
     }
@@ -212,32 +232,32 @@ void service_msg_queue()
     }
     case OLED_NEXT_MENU:
     {
-      thermostat.set_moition_timestamp();
       oled.next_menu();
+      msg_queue.push(START_SCREEN_TIMEOUT);
       break;
     }
     case OLED_PREV_MENU:
     {
-      thermostat.set_moition_timestamp();
       oled.previous_menu();
+      msg_queue.push(START_SCREEN_TIMEOUT);
       break;
     }
     case OLED_EDIT_MENU:
     {
-      thermostat.set_moition_timestamp();
       oled.edit();
+      msg_queue.push(START_SCREEN_TIMEOUT);
       break;
     }
     case OLED_ROTARY_CCW:
     {
-      thermostat.set_moition_timestamp();
       oled.rotary_dial(-1);
+      msg_queue.push(START_SCREEN_TIMEOUT);
       break;
     }
     case OLED_ROTARY_CW:
     {
-      thermostat.set_moition_timestamp();
       oled.rotary_dial(1);
+      msg_queue.push(START_SCREEN_TIMEOUT);
       break;
     }
     default:
@@ -246,4 +266,31 @@ void service_msg_queue()
 
     msg_queue.pop();
   }
+}
+
+void printWifiStatus() {
+
+  // print the SSID of the network you're attached to:
+
+  Serial.print("SSID: ");
+
+  Serial.println(WiFi.SSID());
+
+  // print your board's IP address:
+
+  IPAddress ip = WiFi.localIP();
+
+  Serial.print("IP Address: ");
+
+  Serial.println(ip);
+
+  // print the received signal strength:
+
+  long rssi = WiFi.RSSI();
+
+  Serial.print("signal strength (RSSI):");
+
+  Serial.print(rssi);
+
+  Serial.println(" dBm");
 }

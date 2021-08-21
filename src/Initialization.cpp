@@ -3,16 +3,19 @@
 static void isr_button_A()
 {
   global_msg_queue->push(OLED_NEXT_MENU);
+  delay(5);
 }
 
 static void isr_button_B()
 {
   global_msg_queue->push(OLED_PREV_MENU);
+  delay(5);
 }
 
 static void isr_rotary_btn()
 {
   global_msg_queue->push(OLED_EDIT_MENU);
+  delay(5);
 }
 
 static void isr_rotary()
@@ -29,6 +32,7 @@ static void isr_rotary()
   { // CW
     global_msg_queue->push(OLED_ROTARY_CW);
   }
+  delay(5);
 }
 
 static void isr_motion()
