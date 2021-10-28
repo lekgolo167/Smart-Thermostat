@@ -31,13 +31,13 @@ cycle_t *CycleList::find_next_cycle(uint8_t hr, uint8_t min)
 	return nullptr;
 }
 
-void CycleList::update_cycles(uint8_t day)
+void CycleList::update_cycles(uint8_t day, Messenger& messenger)
 {
 	char buffer[1024];
 	
 	sprintf(buffer, URL_GET_CYCLES, day);
 
-	int result = get_request(buffer, buffer, 1024);
+	int result = messenger.get_request(buffer, buffer, 1024);
 	if (result < 1) {
 		// request failed
 		return;

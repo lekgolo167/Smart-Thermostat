@@ -1,13 +1,56 @@
-#include "Server.hpp"
-#include "parson.h"
+#include "Messenger.hpp"
 
-void post_request(const char *path, char *msg, int len)
+Messenger::Messenger(/* args */)
 {
+	m_remoteIP = IPAddress(192,168,0,238);
+}
+
+Messenger::~Messenger()
+{
+}
+
+void Messenger::initialize() {
+	
+	m_udp_msg.begin(LOCAL_PORT);
+	m_udp_hb.begin(LOCAL_HB_PORT);
+}
+
+bool Messenger::check_server_available(const char* service) {
+
+	m_udp_hb.beginPacket(m_remoteIP, 1887);
+	m_udp_hb.write(service);
+	m_udp_hb.endPacket();
+
+	uint8_t buffer[8];
+	int size;
+	uint32_t start = millis();
+	do {
+		size = m_udp_hb.parsePacket();
+	}
+	while(size == 0 && millis() - start < 300);
+	
+	if (size > 0) {
+		m_udp_hb.read(buffer, 8);
+		//m_udp_hb.stop();
+		return true;
+	}
+	else {
+		//m_udp_hb.stop();
+		return false;
+	} 
+}
+
+void Messenger::post_request(const char *path, char *msg, int len) {
+	if (!check_server_available("3")) {
+		Serial.println("Server unavailable");
+		return;
+	}
+
 	// Prepare the client
 	WiFiClient client;
-
+	IPAddress remoteIP(192,168,0,238);
 	// Connect to the server
-	if (client.connect(SERVER_ADDRESS, SERVER_POST_PORT))
+	if (client.connect(remoteIP, SERVER_POST_PORT))
 	{
 		// Connection established
 		client.print("POST ");
@@ -25,18 +68,22 @@ void post_request(const char *path, char *msg, int len)
 		client.println();
 	}
 
-	client.stop();
-		
+	client.stop();	
 }
 
-int get_request(const char *path, char *buffer, size_t size)
-{
+int Messenger::get_request(const char *path, char *buffer, size_t size) {
+	
+	if (!check_server_available("4")) {
+		Serial.println("Server unavailable");
+		return -1;
+	}
+
 	// Prepare the client
 	WiFiClient client;
 	int data_length = -1;
 
 	// Connect to the server
-	if (client.connect(SERVER_ADDRESS, SERVER_PORT))
+	if (client.connect(SERVER_ADDRESS, SERVER_GET_PORT))
 	{
 		// Connection established
 		client.print("GET ");
@@ -45,7 +92,7 @@ int get_request(const char *path, char *buffer, size_t size)
 		client.print("Host: ");
 		client.print(SERVER_ADDRESS);
 		client.print(":");
-		client.println(SERVER_PORT);
+		client.println(SERVER_GET_PORT);
 		client.println();
 	}
 	else
@@ -93,8 +140,19 @@ int get_request(const char *path, char *buffer, size_t size)
 	return data_length;
 }
 
-float get_temporary_temperature()
-{
+int Messenger::check_inbox() {
+	int packet_size = m_udp_msg.parsePacket();
+	if (packet_size) {
+		// read packet into buffer
+		char buffer[16];
+		int len = m_udp_msg.read(buffer, 16);
+
+		return atoi(buffer);
+	}
+	return 0;
+}
+
+float Messenger::get_temporary_temperature() {
 	char buffer[256];
 	float temperature = 0.0;
 	if (get_request(URL_GET_TEMPORARY, buffer, 256) > 0)
@@ -107,8 +165,7 @@ float get_temporary_temperature()
 	return temperature;
 }
 
-void get_day_ids(int *id_array)
-{
+void Messenger::get_day_ids(int *id_array) {
 	char buffer[256];
 	if (get_request(URL_GET_DAY_IDS, buffer, 256) > 0)
 	{
@@ -123,7 +180,7 @@ void get_day_ids(int *id_array)
 	}
 }
 
-uint32_t get_epoch() {
+uint32_t Messenger::get_epoch() {
 	char buffer[256];
 	uint32_t epoch = 0;
 	if (get_request(URL_GET_EPOCH, buffer, 256) > 0)

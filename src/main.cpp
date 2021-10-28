@@ -8,12 +8,13 @@
 #include "Oled.hpp"
 #include "MesgQueue.hpp"
 #include "Timers.hpp"
+#include "Messenger.hpp"
 
 sensor_readings *sensor = new sensor_readings;
 thermostat_settings *settings = new thermostat_settings;
 tm *clk = new tm;
 RTCZero rtc;
-WiFiUDP udp;
+Messenger messenger;
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 OLED oled = OLED(&display, clk, settings, sensor);
 Thermostat thermostat = Thermostat(clk, settings, sensor);
@@ -53,10 +54,11 @@ void setup()
   initGPIO();
   initI2C();
   initTimers();
-  initWiFi(udp);
+  initWiFi();
   printWifiStatus();
   initRTC(rtc);
   thermostat.initialize();
+  messenger.initialize();
   msg_queue.push(GET_EPOCH);
   msg_queue.push(RTC_UPDATE);
   msg_queue.push(SAMPLE_AIR);
@@ -106,7 +108,7 @@ void service_msg_queue()
     }
     case GET_EPOCH:
     {
-      uint32_t epoch = get_epoch();
+      uint32_t epoch = messenger.get_epoch();
       if (epoch) {
         rtc.setEpoch(epoch);
       }
@@ -141,32 +143,21 @@ void service_msg_queue()
     }
     case CHECK_FOR_UDP_MSG:
     {
-      int packet_size = udp.parsePacket();
-      if (packet_size)
+      int msg = messenger.check_inbox();
+
+      if (msg == 1)
       {
-        // read the packet into packetBufffer
-        int len = udp.read(packetBuffer, BUFF_SIZE);
-
-        if (len > 0)
-        {
-          packetBuffer[len] = 0;
-          int msg = atoi(packetBuffer);
-
-          if (msg == 1)
-          {
-            msg_queue.push(GET_TEMPORARY_OVERRIDE);
-          }
-          else if (msg == 2)
-          {
-            msg_queue.push(UPDATE_SCHEDULE);
-          }
-        }
+        msg_queue.push(GET_TEMPORARY_OVERRIDE);
+      }
+      else if (msg == 2)
+      {
+        msg_queue.push(UPDATE_SCHEDULE);
       }
       break;
     }
     case UPDATE_SCHEDULE:
     {
-      thermostat.update_schedule();
+      thermostat.update_schedule(messenger);
       break;
     }
     case START_TEMPORARY_OVERRIDE:
@@ -176,7 +167,7 @@ void service_msg_queue()
     }
     case GET_TEMPORARY_OVERRIDE:
     {
-      float temperature = get_temporary_temperature();
+      float temperature = messenger.get_temporary_temperature();
       if (temperature > 0.0)
       {
         settings->target_temperature = temperature;
@@ -187,32 +178,32 @@ void service_msg_queue()
     case SEND_SERVER_TEMPERATURE:
     {
       int len = sprintf(packetBuffer, POST_TEMPERATURE, sensor->temperature_F, sensor->humidity);
-      post_request(URL_TEMPERATURE, packetBuffer, len);
+      messenger.post_request(URL_TEMPERATURE, packetBuffer, len);
       break;
     }
     case SEND_SERVER_STATS:
     {
       int len = sprintf(packetBuffer, POST_STATS, settings->target_temperature, settings->lower_threshold, settings->upper_threshold);
-      post_request(URL_STATS, packetBuffer, len);
+      messenger.post_request(URL_STATS, packetBuffer, len);
       break;
     }
     case SEND_SERVER_MOTION:
     {
       int len = sprintf(packetBuffer, POST_MOTION, 1);
-      post_request(URL_MOTION, packetBuffer, len);
+      messenger.post_request(URL_MOTION, packetBuffer, len);
       break;
     }
     case SEND_SEVER_RUNTIME:
     {
       oled.set_runtime(thermostat.get_runtime());
       int len = sprintf(packetBuffer, POST_RUNTIME, thermostat.get_runtime());
-      post_request(URL_STATS, packetBuffer, len);
+      messenger.post_request(URL_STATS, packetBuffer, len);
       break;
     }
     case SEND_SERVER_FURNACE_STATE:
     {
       int len = sprintf(packetBuffer, POST_FURNACE_STATE, thermostat.get_furnace_state());
-      post_request(URL_STATS, packetBuffer, len);
+      messenger.post_request(URL_STATS, packetBuffer, len);
       break;
     }
     case OLED_ON:

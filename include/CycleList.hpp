@@ -2,8 +2,9 @@
 
 #include <stdint.h>
 
+#include "Messenger.hpp"
 #include "LinkedList.hpp"
-#include "Server.hpp"
+#include "Messenger.hpp"
 #include "parson.h"
 
 typedef struct cycle
@@ -24,7 +25,7 @@ public:
 	~CycleList();
 	void print_cycles();
 	cycle_t *find_next_cycle(uint8_t hr, uint8_t min);
-	void update_cycles(uint8_t day);
+	void update_cycles(uint8_t day, Messenger& messenger);
 
 	int m_dayID;
 };

@@ -4,7 +4,7 @@
 #include <time.h>
 
 #include "CycleList.hpp"
-#include "Server.hpp"
+#include "Messenger.hpp"
 #include "Constants.hpp"
 #include "HTU21D.hpp"
 #include "MesgQueue.hpp"
@@ -38,7 +38,7 @@ public:
 	void run_cycle();
 	void initialize();
 	void sample_air();
-	void update_schedule();
+	void update_schedule(Messenger& messenger);
 	uint32_t get_runtime();
 	bool get_furnace_state();
 	void start_temporary_override();

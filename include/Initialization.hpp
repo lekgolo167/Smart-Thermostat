@@ -4,7 +4,6 @@
 #include <Arduino.h>
 #include <RTCZero.h>
 #include <WiFiNINA.h>
-#include <WIFIUdp.h>
 
 #include "Constants.hpp"
 #include "WiFiSecrets.h"
@@ -17,6 +16,6 @@ void initGPIO();
 
 void initTimers();
 
-void initWiFi(WiFiUDP& udp);
+void initWiFi();
 
 void initRTC(RTCZero& rtc);

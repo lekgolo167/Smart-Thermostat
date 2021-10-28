@@ -137,18 +137,18 @@ bool Thermostat::motion_timeout_check()
 	return true;
 }
 
-void Thermostat::update_schedule()
+void Thermostat::update_schedule(Messenger& messenger)
 {
 	int server_IDs[7];
 
-	get_day_ids(server_IDs);
+	messenger.get_day_ids(server_IDs);
 
 	for (uint8_t day = 0; day < 7; day++)
 	{
 		if (server_IDs[day] != m_days[day]->m_dayID)
 		{
 			m_days[day]->m_dayID = server_IDs[day];
-			m_days[day]->update_cycles(day);
+			m_days[day]->update_cycles(day, messenger);
 
 			if (m_time->tm_wday == day)
 			{
