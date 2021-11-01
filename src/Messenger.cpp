@@ -146,7 +146,7 @@ int Messenger::check_inbox() {
 		// read packet into buffer
 		char buffer[16];
 		int len = m_udp_msg.read(buffer, 16);
-
+		buffer[len] = 0;
 		return atoi(buffer);
 	}
 	return 0;

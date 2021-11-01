@@ -7,6 +7,7 @@
 
 #include "Constants.hpp"
 #include "Thermostat.hpp"
+#include "History.hpp"
 
 #define OLED_NUM_MENUS 7
 
@@ -37,7 +38,7 @@
 class OLED
 {
 public:
-	OLED(Adafruit_SSD1306 *display, tm *clk, thermostat_settings *settings, sensor_readings *sensor);
+	OLED(Adafruit_SSD1306* display, tm* clk, History* history, thermostat_settings* settings, sensor_readings* sensor);
 	~OLED();
 	void next_menu();
 	void previous_menu();
@@ -50,6 +51,7 @@ public:
 
 private:
 	void oled_draw_logo();
+	void draw_history_graph();
 	void menu_sensor_data();
 	void menu_sample_settings();
 	void menu_set_temperature();
@@ -65,6 +67,7 @@ private:
 	Adafruit_SSD1306 *m_display;
 	thermostat_settings *m_settings;
 	sensor_readings *m_sensor;
+	History* m_history;
 	tm *m_time;
 	uint32_t m_furnace_runtime;
 	int8_t oled_scroll_counter;

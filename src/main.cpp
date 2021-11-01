@@ -9,14 +9,16 @@
 #include "MesgQueue.hpp"
 #include "Timers.hpp"
 #include "Messenger.hpp"
+#include "History.hpp"
 
 sensor_readings *sensor = new sensor_readings;
 thermostat_settings *settings = new thermostat_settings;
 tm *clk = new tm;
 RTCZero rtc;
 Messenger messenger;
+History history;
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
-OLED oled = OLED(&display, clk, settings, sensor);
+OLED oled = OLED(&display, clk, &history, settings, sensor);
 Thermostat thermostat = Thermostat(clk, settings, sensor);
 std::queue<int> msg_queue;
 
@@ -37,7 +39,7 @@ void TC3_Handler(void)
   // USER CODE HERE
   if (millis() - thermostat.get_motion_timestamp() > settings->screen_timeout_millis)
   {
-    msg_queue.push(NO_MOTION);
+      msg_queue.push(NO_MOTION);
   }
   // END OF USER CODE
   TC3->COUNT16.INTFLAG.bit.MC0 = 1; //Writing a 1 to INTFLAG.bit.MC0 clears the interrupt so that it will run again
@@ -59,6 +61,7 @@ void setup()
   initRTC(rtc);
   thermostat.initialize();
   messenger.initialize();
+  history.initialize(sensor->temperature_F);
   msg_queue.push(GET_EPOCH);
   msg_queue.push(RTC_UPDATE);
   msg_queue.push(SAMPLE_AIR);
@@ -85,6 +88,7 @@ void service_msg_queue()
     case SAMPLE_AIR:
     {
       thermostat.sample_air();
+      history.insert(sensor->temperature_F);
       thermostat.run_cycle();
       msg_queue.push(OLED_UPDATE);
       msg_queue.push(CHECK_FOR_UDP_MSG);
@@ -131,8 +135,13 @@ void service_msg_queue()
     }
     case NO_MOTION:
     {
-      TC3_stop_timer();
-      msg_queue.push(OLED_OFF);
+      if (digitalRead(MOTION_SENSOR_PIN) != HIGH) {
+        TC3_stop_timer();
+        msg_queue.push(OLED_OFF);
+      }
+      else {
+        TC3_start_timer();
+      }
       break;
     }
     case START_SCREEN_TIMEOUT:

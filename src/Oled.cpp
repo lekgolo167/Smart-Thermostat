@@ -1,16 +1,17 @@
 #include "Oled.hpp"
 
-OLED::OLED(Adafruit_SSD1306 *display, tm *clk, thermostat_settings *settings, sensor_readings *sensor)
+OLED::OLED(Adafruit_SSD1306 *display, tm *clk, History* history, thermostat_settings *settings, sensor_readings *sensor)
 {
 	m_settings = settings;
 	m_sensor = sensor;
 	m_time = clk;
-	m_display = display; // new Adafruit_SSD1306(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
-	//m_display->begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS, -1, true);
+	m_history = history;
+	m_history->set_grid_scale(55.0, 18.0);
+	m_display = display;
 	m_display->setTextColor(SSD1306_WHITE);
 	edit_oled_menu = false;
 	oled_menu_item = 0;
-	oled_menu_state = 1;
+	oled_menu_state = 8;
 	oled_screen_ON = true;
 	oled_scroll_counter = 0;
 	m_furnace_runtime = 0;
@@ -71,9 +72,14 @@ void OLED::update()
 		menu_current_cycle();
 		break;
 	}
+	case 8:
+	{
+		draw_history_graph();
+		break;
+	}
 	default:
 	{
-		if (oled_menu_state > 7 || oled_menu_state < 0)
+		if (oled_menu_state > 8 || oled_menu_state < 0)
 		{
 			oled_menu_state = 0;
 		}
@@ -497,6 +503,48 @@ void OLED::menu_current_cycle()
 	sprintf(buffer, "Runtime %d min", m_furnace_runtime / 60);
 	m_display->setCursor(1, OLED_LINE_3_Y);
 	m_display->println(buffer);
+
+	// Send the buffer to OLED RAM
+	m_display->display();
+}
+
+void OLED::draw_history_graph()
+{
+	// Clear OLED buffer
+	m_display->clearDisplay();
+	m_display->setCursor(0, 0);
+
+	// Draw the title
+	m_display->setTextSize(FONT_SIZE_TITLE);
+	m_display->print("History");
+	m_display->setTextSize(FONT_SIZE_LINE);
+	
+	// Convert celcius temperature to string
+	sprintf(buffer, " %.1fF\367", m_sensor->temperature_F);
+	m_display->println(buffer);
+	
+	m_history->prepare_data();
+	// Y-axis labels
+	m_display->setCursor(0, 17);
+	m_display->print((int16_t)m_history->get_max());
+	m_display->setCursor(0, 48);
+	m_display->print((int16_t)m_history->get_min());
+
+	// X-axis labels
+	int time_marker = (m_settings->sample_period_sec * m_history->m_length) / 60;
+	m_display->setCursor(116, 57);
+	m_display->print(0);
+	m_display->setCursor(61, 57);
+	m_display->print(time_marker >> 1);
+	m_display->setCursor(13, 57);
+	m_display->print(time_marker);
+	m_display->drawFastHLine(12, 55, 112, WHITE);
+	m_display->drawFastVLine(12, 17, 39, WHITE);
+
+	for (int x = 13; x < m_history->m_length+13; x++) {
+		int16_t y = m_history->get_datapoint();
+		m_display->drawPixel(x, y, WHITE);
+	}
 
 	// Send the buffer to OLED RAM
 	m_display->display();
