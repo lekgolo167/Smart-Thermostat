@@ -35,7 +35,7 @@ HTU21D::HTU21D()
 //Begin
 /*******************************************************************************************/
 //Start I2C communication
-bool HTU21D::begin(void)
+void HTU21D::begin(void)
 {
   Wire.begin();
   Wire.setClock(400000);

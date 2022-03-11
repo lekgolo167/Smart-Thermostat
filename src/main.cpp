@@ -10,6 +10,7 @@
 #include "Timers.hpp"
 #include "Messenger.hpp"
 #include "History.hpp"
+#include "Weather.hpp"
 
 sensor_readings *sensor = new sensor_readings;
 thermostat_settings *settings = new thermostat_settings;
@@ -17,8 +18,9 @@ tm *clk = new tm;
 RTCZero rtc;
 Messenger messenger;
 History history;
+Weather weather;
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
-OLED oled = OLED(&display, clk, &history, settings, sensor);
+OLED oled = OLED(&display, clk, &history, &weather, settings, sensor);
 Thermostat thermostat = Thermostat(clk, settings, sensor);
 std::queue<int> msg_queue;
 
@@ -108,6 +110,8 @@ void service_msg_queue()
       clk->tm_wday = current_clk->tm_wday;
       clk->tm_yday = current_clk->tm_yday;
       clk->tm_mday = current_clk->tm_mday;
+
+      weather.set_current_weather(clk->tm_hour);
       break;
     }
     case GET_EPOCH:
