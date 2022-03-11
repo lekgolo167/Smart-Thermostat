@@ -139,8 +139,8 @@ void service_msg_queue()
         TC3_stop_timer();
         msg_queue.push(OLED_OFF);
       }
-      else {
-        TC3_start_timer();
+      else { // motion sensor is still high restart timer
+        msg_queue.push(START_SCREEN_TIMEOUT);
       }
       break;
     }
@@ -266,6 +266,7 @@ void service_msg_queue()
 
     msg_queue.pop();
   }
+  
 }
 
 void printWifiStatus() {

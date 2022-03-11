@@ -3,19 +3,16 @@
 static void isr_button_A()
 {
   global_msg_queue->push(OLED_NEXT_MENU);
-  delay(5);
 }
 
 static void isr_button_B()
 {
   global_msg_queue->push(OLED_PREV_MENU);
-  delay(5);
 }
 
 static void isr_rotary_btn()
 {
   global_msg_queue->push(OLED_EDIT_MENU);
-  delay(5);
 }
 
 static void isr_rotary()
@@ -24,15 +21,14 @@ static void isr_rotary()
   PinStatus rotary_A_state = digitalRead(ROTARY_A_PIN);
   PinStatus rotary_B_state = digitalRead(ROTARY_B_PIN);
 
-  if (rotary_A_state && !rotary_B_state)
+  if (!rotary_A_state && rotary_B_state)
   { // CCW
     global_msg_queue->push(OLED_ROTARY_CCW);
   }
-  else if (rotary_A_state && rotary_B_state)
+  else if (!rotary_A_state && !rotary_B_state)
   { // CW
     global_msg_queue->push(OLED_ROTARY_CW);
   }
-  delay(5);
 }
 
 static void isr_motion()
@@ -60,8 +56,9 @@ void initGPIO()
   attachInterrupt(digitalPinToInterrupt(BUTTON_B_PIN), isr_button_B, RISING);
   // Rotary Enocder
   pinMode(ROTARY_A_PIN, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(ROTARY_A_PIN), isr_rotary, RISING);
+  attachInterrupt(digitalPinToInterrupt(ROTARY_A_PIN), isr_rotary, FALLING);
   pinMode(ROTARY_B_PIN, INPUT_PULLUP);
+
   pinMode(ROTARY_BTN_PIN, INPUT);
   attachInterrupt(digitalPinToInterrupt(ROTARY_BTN_PIN), isr_rotary_btn, RISING);
   // Motion Sensor
