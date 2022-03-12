@@ -2,6 +2,8 @@
 
 #include <stdint.h>
 
+const inline char WEEKDAY_NAMES[7][4] = {"sun", "mon", "tue", "wed", "thu", "fri", "sat"};
+
 // Buttons
 const uint8_t BUTTON_A_PIN = 9;
 const uint8_t BUTTON_B_PIN = 10;

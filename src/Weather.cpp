@@ -620,27 +620,35 @@ enum weather_icons
 
 Weather::Weather()
 {
-	for (int hr = 0; hr <= 24; hr++)
+	for (int hr = 0; hr < FORECAST_HOURS; hr++)
 	{
 		weather_data_t *wd = new weather_data_t{
 			this->get_icon(hr % 12),
 			int8_t(50 + hr),
-			int8_t(45 + 0.2 * hr)};
+			int8_t(45 + 0.2 * hr),
+			0};
 
 		hourly_data[hr] = wd;
 	}
 
-	for (int day = 0; day < 3; day++)
+	for (int day = 0; day < FORECAST_DAYS; day++)
 	{
 		forecast_data[day] = hourly_data[day];
+		forecast_data[day]->day = day;
 	}
 
 	current_weather = hourly_data[0];
+	current_day = -1;
 }
 
 Weather::~Weather()
 {
 
+}
+
+bool Weather::is_new_day(int day)
+{
+	return current_day != day;
 }
 
 const uint8_t* Weather::get_icon(int icon)
@@ -689,8 +697,44 @@ const uint8_t* Weather::get_icon(int icon)
 	}
 }
 
-void Weather::get_weather()
+void Weather::get_weather(Messenger& messenger, int today)
 {
+	char buffer[1024];
+
+	int result = messenger.get_request(URL_GET_FORECAST, buffer, 1024);
+	if (result < 1) {
+		// request failed
+		return;
+	}
+	current_day = today;
+	
+	JSON_Value* raw = json_parse_string(buffer);
+	JSON_Object* obj = json_value_get_object(raw);
+	JSON_Array* hourly_array = json_object_get_array(obj, "hourly");
+	int hours = min(json_array_get_count(hourly_array), FORECAST_HOURS);
+
+	for (int i=0; i < hours; i++) {
+		JSON_Object* hour_obj = json_array_get_object(hourly_array, i);
+		int icon = (int)json_object_get_number(hour_obj, "i");
+		int temp = (int)json_object_get_number(hour_obj, "t");
+		hourly_data[i]->icon = get_icon(icon);
+		hourly_data[i]->high = temp;
+	}
+
+	JSON_Array* daily_array = json_object_get_array(obj, "daily");
+	int days = min(json_array_get_count(daily_array), FORECAST_DAYS);
+	for (int i=0; i < days; i++) {
+		JSON_Object* daily_obj = json_array_get_object(daily_array, i);
+		int day = (int)json_object_get_number(daily_obj, "d");
+		int icon = (int)json_object_get_number(daily_obj, "i");
+		int tH = (int)json_object_get_number(daily_obj, "H");
+		int tL = (int)json_object_get_number(daily_obj, "L");
+		forecast_data[i]->day = day;
+		forecast_data[i]->icon = get_icon(icon);
+		forecast_data[i]->high = tH;
+		forecast_data[i]->low = tL;
+	}
+	json_value_free(raw);
 }
 
 void Weather::set_current_weather(int hr)

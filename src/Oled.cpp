@@ -12,7 +12,7 @@ OLED::OLED(Adafruit_SSD1306 *display, tm *clk, History* history, Weather* weathe
 	m_display->setTextColor(SSD1306_WHITE);
 	edit_oled_menu = false;
 	oled_menu_item = 0;
-	oled_menu_state = 8;
+	oled_menu_state = 0;
 	oled_screen_ON = true;
 	oled_scroll_counter = 0;
 	m_furnace_runtime = 0;
@@ -714,30 +714,48 @@ void OLED::oled_draw_logo()
 	m_display->setCursor(0, 0);
 	m_display->setTextSize(FONT_SIZE_TITLE);
 	m_display->print("Weather");
+	m_display->setCursor(105, 0);
+	m_display->setTextSize(FONT_SIZE_LINE);
 
 	weather_data_t* wd = m_weather->get_current_weather();
+
+	if (oled_scroll_counter > 3)
+	{
+		oled_scroll_counter = 0;
+	}
 	switch (oled_scroll_counter)
 	{
 	case 0:
+		m_display->print("now");
+		m_display->setTextSize(FONT_SIZE_TITLE);
+
+		sprintf(buffer, "O:%dF\367", wd->high);
+		m_display->setCursor(56, OLED_LINE_1_Y);
+		m_display->println(buffer);
+
+		sprintf(buffer, "I:%dF\367", (int)m_sensor->temperature_F);
+		m_display->setCursor(56, OLED_LINE_3_Y);
+		m_display->println(buffer);
 		break;
 	case 1:
 	case 2:
 	case 3:
 		wd = m_weather->get_forecast(oled_scroll_counter);
+		m_display->print(WEEKDAY_NAMES[wd->day]);
+		m_display->setTextSize(FONT_SIZE_TITLE);
+
+		sprintf(buffer, "H:%dF\367", wd->high);
+		m_display->setCursor(56, OLED_LINE_1_Y);
+		m_display->println(buffer);
+
+		sprintf(buffer, "L:%dF\367", wd->low);
+		m_display->setCursor(56, OLED_LINE_3_Y);
+		m_display->println(buffer);
 	break;
 	default:
-		oled_scroll_counter = 0;
 		break;
 	}
 	m_display->drawBitmap(0, 16, wd->icon, 48, 48, SSD1306_WHITE);
-
-	sprintf(buffer, "H:%dF\367", wd->high);
-	m_display->setCursor(56, OLED_LINE_1_Y);
-	m_display->println(buffer);
-
-	sprintf(buffer, "L:%dF\367", wd->low);
-	m_display->setCursor(56, OLED_LINE_3_Y);
-	m_display->println(buffer);
 
 	m_display->display();
 }

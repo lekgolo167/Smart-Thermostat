@@ -171,10 +171,10 @@ void Messenger::get_day_ids(int *id_array) {
 	{
 		JSON_Value *raw = json_parse_string(buffer);
 		JSON_Object *obj = json_value_get_object(raw);
-		char dates[7][4] = {"sun", "mon", "tue", "wed", "thu", "fri", "sat"};
+		
 		for (int i = 0; i < 7; i++)
 		{
-			id_array[i] = (int)json_object_get_number(obj, dates[i]);
+			id_array[i] = (int)json_object_get_number(obj, WEEKDAY_NAMES[i]);
 		}
 		json_value_free(raw);
 	}

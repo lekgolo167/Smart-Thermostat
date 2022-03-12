@@ -111,6 +111,10 @@ void service_msg_queue()
       clk->tm_yday = current_clk->tm_yday;
       clk->tm_mday = current_clk->tm_mday;
 
+      if (weather.is_new_day(clk->tm_wday))
+      {
+        msg_queue.push(GET_FORECAST);
+      }
       weather.set_current_weather(clk->tm_hour);
       break;
     }
@@ -172,6 +176,10 @@ void service_msg_queue()
     {
       thermostat.update_schedule(messenger);
       break;
+    }
+    case GET_FORECAST:
+    {
+      weather.get_weather(messenger, clk->tm_wday);
     }
     case START_TEMPORARY_OVERRIDE:
     {

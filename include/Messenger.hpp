@@ -5,6 +5,7 @@
 #include <WIFIUdp.h>
 
 #include "parson.h"
+#include "Constants.hpp"
 
 class Messenger
 {
@@ -46,6 +47,7 @@ public:
 const inline char* SERVER_ADDRESS = "192.168.0.238";
 
 const inline char* URL_GET_TEMPORARY = "/getTemporary";
+const inline char* URL_GET_FORECAST = "/getForecast";
 const inline char* URL_GET_DAY_IDS = "/getDayIDs";
 const inline char* URL_GET_CYCLES = "/getCycles/%d";
 const inline char* URL_GET_EPOCH = "/getEpoch";
