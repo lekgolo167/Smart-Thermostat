@@ -38,7 +38,7 @@ public:
 	int get_request(const char *path, char *buffer, size_t size);
 	int check_inbox();
 	float get_temporary_temperature();
-	void get_day_ids(int *id_array);
+	bool get_day_ids(int *id_array);
 	uint32_t get_epoch();
 };
 

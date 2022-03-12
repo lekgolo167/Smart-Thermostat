@@ -143,7 +143,7 @@ void service_msg_queue()
     }
     case NO_MOTION:
     {
-      if (digitalRead(MOTION_SENSOR_PIN) != HIGH) {
+      if (digitalRead(MOTION_SENSOR_PIN) == HIGH) {
         TC3_stop_timer();
         msg_queue.push(OLED_OFF);
       }
@@ -180,6 +180,7 @@ void service_msg_queue()
     case GET_FORECAST:
     {
       weather.get_weather(messenger, clk->tm_wday);
+      break;
     }
     case START_TEMPORARY_OVERRIDE:
     {
@@ -195,6 +196,7 @@ void service_msg_queue()
         msg_queue.push(START_TEMPORARY_OVERRIDE);
         msg_queue.push(SEND_SERVER_STATS);
       }
+      break;
     }
     case SEND_SERVER_TEMPERATURE:
     {

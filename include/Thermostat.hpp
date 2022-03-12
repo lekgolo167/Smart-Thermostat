@@ -59,6 +59,7 @@ private:
 	float m_temperature_samples[20];
 	float m_temperatures_sum;
 	int m_sample_avg_index;
+	bool m_initialized_from_server;
 	bool m_furnace_ON;
 	bool m_override_ON;
 	uint32_t m_motion_timestamp;

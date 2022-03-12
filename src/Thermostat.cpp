@@ -15,6 +15,7 @@ Thermostat::Thermostat(tm *clk, thermostat_settings *settings, sensor_readings *
 	m_settings->override_timeout_millis = 60 * 60 * 1000;
 	m_settings->motion_timeout_millis = 48 * 60 * 60 * 1000;
 
+	m_initialized_from_server = false;
 	m_furnace_ON = false;
 	m_override_ON = false;
 	m_furnace_runtime = 0;
@@ -24,7 +25,9 @@ Thermostat::Thermostat(tm *clk, thermostat_settings *settings, sensor_readings *
 	for (uint8_t day = 0; day < 7; day++)
 	{
 		m_days[day] = new CycleList();
-		m_days[day]->push_back(cycle{id--, 0, 0, 0, 0, 60.0});
+		m_days[day]->push_front(cycle{id--, 0, 0, 10, 30, 62.0});
+		m_days[day]->push_front(cycle{id--, 10, 30, 18, 0, 68.0});
+		m_days[day]->push_front(cycle{id--, 18, 0, 0, 0, 70.0});
 	}
 }
 
@@ -58,6 +61,10 @@ void Thermostat::update_cycle()
 		}
 		// temporary solution to keep rtc time correct as it loses 24 minutes per day
 		global_msg_queue->push(GET_EPOCH);
+		if(!m_initialized_from_server)
+		{
+			global_msg_queue->push(UPDATE_SCHEDULE);
+		}
 	}
 }
 
@@ -141,8 +148,12 @@ void Thermostat::update_schedule(Messenger& messenger)
 {
 	int server_IDs[7];
 
-	messenger.get_day_ids(server_IDs);
+	if (!messenger.get_day_ids(server_IDs))
+	{
+		return;
+	}
 
+	m_initialized_from_server = true;
 	for (uint8_t day = 0; day < 7; day++)
 	{
 		if (server_IDs[day] != m_days[day]->m_dayID)

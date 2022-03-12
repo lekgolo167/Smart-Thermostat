@@ -21,11 +21,11 @@ static void isr_rotary()
   PinStatus rotary_A_state = digitalRead(ROTARY_A_PIN);
   PinStatus rotary_B_state = digitalRead(ROTARY_B_PIN);
 
-  if (!rotary_A_state && rotary_B_state)
+  if (rotary_A_state && rotary_B_state)
   { // CCW
     global_msg_queue->push(OLED_ROTARY_CCW);
   }
-  else if (!rotary_A_state && !rotary_B_state)
+  else if (rotary_A_state && !rotary_B_state)
   { // CW
     global_msg_queue->push(OLED_ROTARY_CW);
   }
@@ -51,19 +51,19 @@ void initGPIO()
 {
   // Buttons
   pinMode(BUTTON_A_PIN, INPUT);
-  attachInterrupt(digitalPinToInterrupt(BUTTON_A_PIN), isr_button_A, RISING);
+  attachInterrupt(digitalPinToInterrupt(BUTTON_A_PIN), isr_button_A, FALLING);
   pinMode(BUTTON_B_PIN, INPUT);
-  attachInterrupt(digitalPinToInterrupt(BUTTON_B_PIN), isr_button_B, RISING);
+  attachInterrupt(digitalPinToInterrupt(BUTTON_B_PIN), isr_button_B, FALLING);
   // Rotary Enocder
   pinMode(ROTARY_A_PIN, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(ROTARY_A_PIN), isr_rotary, FALLING);
+  attachInterrupt(digitalPinToInterrupt(ROTARY_A_PIN), isr_rotary, RISING);
   pinMode(ROTARY_B_PIN, INPUT_PULLUP);
 
   pinMode(ROTARY_BTN_PIN, INPUT);
-  attachInterrupt(digitalPinToInterrupt(ROTARY_BTN_PIN), isr_rotary_btn, RISING);
+  attachInterrupt(digitalPinToInterrupt(ROTARY_BTN_PIN), isr_rotary_btn, FALLING);
   // Motion Sensor
   pinMode(MOTION_SENSOR_PIN, INPUT_PULLDOWN);
-  attachInterrupt(digitalPinToInterrupt(MOTION_SENSOR_PIN), isr_motion, RISING);
+  attachInterrupt(digitalPinToInterrupt(MOTION_SENSOR_PIN), isr_motion, FALLING);
   // // Furnace Relay
   pinMode(FURNACE_RELAY_PIN, OUTPUT);
   digitalWrite(FURNACE_RELAY_PIN, LOW);
@@ -90,7 +90,8 @@ void initRTC(RTCZero &rtc)
   rtc.setTime(21, 33, 0);
   rtc.setDate(9, 8, 21);
 
-  REG_RTC_FREQCORR = 120;
+  REG_RTC_FREQCORR = 127;
+  REG_RTC_FREQCORR |= RTC_FREQCORR_SIGN;
 
   rtc.setAlarmTime(1, 0, 0);
   rtc.enableAlarm(rtc.MATCH_SS);

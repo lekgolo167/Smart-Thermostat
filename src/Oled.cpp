@@ -719,7 +719,7 @@ void OLED::oled_draw_logo()
 
 	weather_data_t* wd = m_weather->get_current_weather();
 
-	if (oled_scroll_counter > 3)
+	if (oled_scroll_counter > 3 || oled_scroll_counter < 0)
 	{
 		oled_scroll_counter = 0;
 	}

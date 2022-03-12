@@ -165,7 +165,7 @@ float Messenger::get_temporary_temperature() {
 	return temperature;
 }
 
-void Messenger::get_day_ids(int *id_array) {
+bool Messenger::get_day_ids(int *id_array) {
 	char buffer[256];
 	if (get_request(URL_GET_DAY_IDS, buffer, 256) > 0)
 	{
@@ -177,7 +177,9 @@ void Messenger::get_day_ids(int *id_array) {
 			id_array[i] = (int)json_object_get_number(obj, WEEKDAY_NAMES[i]);
 		}
 		json_value_free(raw);
+		return true;
 	}
+	return false;
 }
 
 uint32_t Messenger::get_epoch() {
