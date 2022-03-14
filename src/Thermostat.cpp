@@ -130,8 +130,14 @@ float Thermostat::calc_avg_room_temperature()
 
 void Thermostat::sample_air()
 {
-	m_sensor->temperature_C = htu.readTemperature();
+	float t = htu.readTemperature();
+	float h = htu.readHumidity();
+	if ((int)t > 900)
+		return;
+	m_sensor->temperature_C = t;
 	m_sensor->temperature_F = 9.0 / 5.0 * m_sensor->temperature_C + 32.0;
+	if ((int)h > 900)
+		return;
 	m_sensor->humidity = htu.readHumidity();
 }
 

@@ -633,7 +633,11 @@ Weather::Weather()
 
 	for (int day = 0; day < FORECAST_DAYS; day++)
 	{
-		forecast_data[day] = hourly_data[day];
+		forecast_data[day] = new weather_data_t{
+			hourly_data[day]->icon,
+			hourly_data[day]->high,
+			hourly_data[day]->low,
+			};
 		forecast_data[day]->day = day;
 	}
 
@@ -747,6 +751,10 @@ void Weather::set_current_weather(int hr)
 
 weather_data_t* Weather::get_current_weather()
 {
+			Serial.print("Getting weather: ");
+
+		Serial.print(" T: ");
+		Serial.println(current_weather->high);
 	return current_weather;
 }
 
