@@ -751,10 +751,6 @@ void Weather::set_current_weather(int hr)
 
 weather_data_t* Weather::get_current_weather()
 {
-			Serial.print("Getting weather: ");
-
-		Serial.print(" T: ");
-		Serial.println(current_weather->high);
 	return current_weather;
 }
 

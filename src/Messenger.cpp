@@ -2,7 +2,10 @@
 
 Messenger::Messenger(/* args */)
 {
-	m_remoteIP = IPAddress(192,168,0,238);
+	m_server_found = false;
+	m_wifi_connection_status = WL_DISCONNECTED;
+	m_server_str = "Unknown";
+	m_ssid = "Unknown";
 }
 
 Messenger::~Messenger()
@@ -15,10 +18,78 @@ void Messenger::initialize() {
 	m_udp_hb.begin(LOCAL_HB_PORT);
 }
 
-bool Messenger::check_server_available(const char* service) {
+int Messenger::connect_to_wifi(int tries)
+{
+	m_wifi_connection_status = WiFi.status();
+	while (m_wifi_connection_status != WL_CONNECTED && tries-- > 0) {
+		m_wifi_connection_status = WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+		delay(500);
+	};
+	
+	if (m_wifi_connection_status == WL_CONNECTED)
+	{
+		m_ssid = WiFi.SSID();
+		m_localIP = WiFi.localIP();
+		global_msg_queue->push(CONNECT_TO_SERVER);
+	}
+	return m_wifi_connection_status;
+}
 
-	m_udp_hb.beginPacket(m_remoteIP, 1887);
-	m_udp_hb.write(service);
+void Messenger::disconnect_wifi()
+{
+	m_wifi_connection_status = WiFi.disconnect();
+	m_server_str = "Unknown";
+	m_server_found = false;
+	m_ssid = "Unknown";
+	m_remoteIP = IPAddress();
+	m_localIP = IPAddress();
+}
+
+IPAddress& Messenger::get_localIP()
+{
+	return m_localIP;
+}
+
+const char* Messenger::get_ssid()
+{
+	return m_ssid;
+}
+
+String& Messenger::get_server_str()
+{
+	return m_server_str;
+}
+
+bool Messenger::obtain_server_IP()
+{
+	int result = WiFi.hostByName(SERVER_NAME, m_remoteIP);
+	m_server_found = result == 1;
+	if (m_server_found)
+	{
+		m_server_str = String(m_remoteIP[0]);
+		m_server_str += "." + String(m_remoteIP[1]);
+		m_server_str += "." + String(m_remoteIP[2]);
+		m_server_str += "." + String(m_remoteIP[3]);
+
+		Serial.println("FOUND SERVER");
+	}
+	return m_server_found;
+}
+
+bool Messenger::wifi_connected()
+{
+	return m_wifi_connection_status == WL_CONNECTED;
+}
+
+bool Messenger::server_found()
+{
+	return m_server_found;
+}
+
+bool Messenger::check_server_available(const SERVER msg) {
+
+	m_udp_hb.beginPacket(m_remoteIP, SERVER_HB_PORT);
+	m_udp_hb.write(String(msg).c_str());
 	m_udp_hb.endPacket();
 
 	uint8_t buffer[8];
@@ -31,33 +102,36 @@ bool Messenger::check_server_available(const char* service) {
 	
 	if (size > 0) {
 		m_udp_hb.read(buffer, 8);
-		//m_udp_hb.stop();
 		return true;
 	}
 	else {
-		//m_udp_hb.stop();
 		return false;
 	} 
 }
 
 void Messenger::post_request(const char *path, char *msg, int len) {
-	if (!check_server_available("3")) {
+	if (!m_server_found)
+	{
+		return;
+	}
+	if (!check_server_available(NODE_RED))
+	{
 		Serial.println("Server unavailable");
 		return;
 	}
 
 	// Prepare the client
 	WiFiClient client;
-	IPAddress remoteIP(192,168,0,238);
+
 	// Connect to the server
-	if (client.connect(remoteIP, SERVER_POST_PORT))
+	if (client.connect(m_remoteIP, SERVER_POST_PORT))
 	{
 		// Connection established
 		client.print("POST ");
 		client.print(path);
 		client.println(" HTTP/1.1");
 		client.print("Host: ");
-		client.print(SERVER_ADDRESS);
+		client.print(m_server_str);
 		client.print(":");
 		client.println(SERVER_POST_PORT);
 		client.println("Content-Type: application/x-www-form-urlencoded");
@@ -72,8 +146,12 @@ void Messenger::post_request(const char *path, char *msg, int len) {
 }
 
 int Messenger::get_request(const char *path, char *buffer, size_t size) {
-	
-	if (!check_server_available("4")) {
+	if (!m_server_found)
+	{
+		return -1;
+	}
+	if (!check_server_available(FLASK))
+	{
 		Serial.println("Server unavailable");
 		return -1;
 	}
@@ -83,14 +161,14 @@ int Messenger::get_request(const char *path, char *buffer, size_t size) {
 	int data_length = -1;
 
 	// Connect to the server
-	if (client.connect(SERVER_ADDRESS, SERVER_GET_PORT))
+	if (client.connect(m_remoteIP, SERVER_GET_PORT))
 	{
 		// Connection established
 		client.print("GET ");
 		client.print(path);
 		client.println(" HTTP/1.0");
 		client.print("Host: ");
-		client.print(SERVER_ADDRESS);
+		client.print(m_server_str);
 		client.print(":");
 		client.println(SERVER_GET_PORT);
 		client.println();
@@ -142,14 +220,14 @@ int Messenger::get_request(const char *path, char *buffer, size_t size) {
 
 int Messenger::check_inbox() {
 	int packet_size = m_udp_msg.parsePacket();
-	if (packet_size) {
+	if (packet_size == 1) {
 		// read packet into buffer
 		char buffer[16];
 		int len = m_udp_msg.read(buffer, 16);
 		buffer[len] = 0;
 		return atoi(buffer);
 	}
-	return 0;
+	return packet_size;
 }
 
 float Messenger::get_temporary_temperature() {

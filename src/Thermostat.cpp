@@ -54,6 +54,7 @@ void Thermostat::update_cycle()
 	if (loaded_cycle->id != m_settings->current_cycle->id)
 	{
 		m_settings->current_cycle = loaded_cycle;
+		m_settings->current_cycle->temp_F = loaded_cycle->temp_F;
 		if (!m_override_ON) {
 			m_settings->target_temperature = loaded_cycle->temp_F;
 
@@ -175,7 +176,7 @@ void Thermostat::update_schedule(Messenger& messenger)
 
 				m_settings->current_cycle = loaded_cycle;
 
-				if (!m_override_ON) {
+				if (!m_override_ON) { // only update the target temperature when there is not a override
 					m_settings->target_temperature = loaded_cycle->temp_F;
 
 					global_msg_queue->push(SEND_SERVER_STATS);
@@ -186,11 +187,11 @@ void Thermostat::update_schedule(Messenger& messenger)
 }
 
 void Thermostat::manage_temporary_override() {
-		if (m_override_ON && millis() - m_temporary_start_time > m_settings->override_timeout_millis) {
-			m_override_ON = false;
-			m_settings->target_temperature = m_settings->current_cycle->temp_F;
-			global_msg_queue->push(SEND_SERVER_STATS);
-		}
+	if (m_override_ON && millis() - m_temporary_start_time > m_settings->override_timeout_millis) {
+		m_override_ON = false;
+		m_settings->target_temperature = m_settings->current_cycle->temp_F;
+		global_msg_queue->push(SEND_SERVER_STATS);
+	}
 }
 
 void Thermostat::start_temporary_override()

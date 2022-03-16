@@ -1,11 +1,12 @@
 #include "Oled.hpp"
 
-OLED::OLED(Adafruit_SSD1306 *display, tm *clk, History* history, Weather* weather, thermostat_settings *settings, sensor_readings *sensor)
+OLED::OLED(Adafruit_SSD1306 *display, tm *clk, History* history, Messenger* messenger, Weather* weather, thermostat_settings *settings, sensor_readings *sensor)
 {
 	m_settings = settings;
 	m_sensor = sensor;
 	m_time = clk;
 	m_history = history;
+	m_messenger = messenger;
 	m_weather = weather;
 	m_history->set_grid_scale(55.0, 18.0);
 	m_display = display;
@@ -35,7 +36,7 @@ void OLED::update()
 	{
 	case 0:
 	{
-		oled_draw_logo();
+		menu_weather_forecast();
 		break;
 	}
 	case 1:
@@ -45,42 +46,47 @@ void OLED::update()
 	}
 	case 2:
 	{
-		menu_sensor_data();
+		draw_history_graph();
 		break;
 	}
 	case 3:
 	{
-		menu_set_thresholds();
+		menu_wifi_status();
 		break;
 	}
 	case 4:
 	{
-		menu_sample_settings();
+		menu_sensor_data();
 		break;
 	}
 	case 5:
 	{
-		menu_motion_settings();
+		menu_set_thresholds();
 		break;
 	}
 	case 6:
 	{
-		menu_date_and_time();
+		menu_sample_settings();
 		break;
 	}
 	case 7:
 	{
-		menu_current_cycle();
+		menu_motion_settings();
 		break;
 	}
 	case 8:
 	{
-		draw_history_graph();
+		menu_date_and_time();
+		break;
+	}
+	case 9:
+	{
+		menu_current_cycle();
 		break;
 	}
 	default:
 	{
-		if (oled_menu_state > 8)
+		if (oled_menu_state > 9)
 		{
 			oled_menu_state = 0;
 		}
@@ -512,6 +518,54 @@ void OLED::menu_current_cycle()
 	m_display->display();
 }
 
+void OLED::menu_wifi_status()
+{
+	int8_t items[] = {-1, -1, -1, -1, TOGGLE_WIFI};
+	// Clear OLED buffer
+	m_display->clearDisplay();
+	m_display->setTextSize(FONT_SIZE_TITLE);
+	m_display->setCursor(0, 0);
+
+	// Draw the title
+	m_display->println("WiFi");
+	m_display->setTextSize(FONT_SIZE_LINE);
+
+	// Draw SSID on line 1
+	m_display->setCursor(1, OLED_LINE_1_Y);
+	m_display->print("SSID: ");
+	m_display->println(m_messenger->get_ssid());
+
+	// Draw local ip on line 2
+	m_display->setCursor(1, OLED_LINE_2_Y);
+	m_display->print("LCL IP: ");
+	m_display->println(m_messenger->get_localIP());
+
+	// Draw server ip on line 3
+	m_display->setCursor(1, OLED_LINE_3_Y);
+	m_display->print("SRV IP: ");
+	m_display->println(m_messenger->get_server_str());
+
+	// Draw connect/disconnect option on line 4
+	m_display->setCursor(1, OLED_LINE_4_Y);
+	if (m_messenger->wifi_connected())
+	{
+		m_display->print("Disconnect");
+	}
+	else
+	{
+		m_display->print("Connect");
+	}
+	m_display->println(" WiFi  'OK'");
+
+	bound_scroll_counter(4, 4, 9);
+
+	// Save which item we are editing
+	oled_menu_item = items[oled_scroll_counter];
+
+	// Send the buffer to OLED RAM
+	m_display->display();
+}
+
 void OLED::draw_history_graph()
 {
 	// Clear OLED buffer
@@ -679,10 +733,26 @@ void OLED::update_temporary_setting_value()
 		temporary_setting = m_settings->override_timeout_millis / (60 * 1000); // convert from millis to minutes
 	}
 	break;
+	case TOGGLE_WIFI:
+	{
+		edit_oled_menu = false;
+		if (m_messenger->wifi_connected())
+		{
+			global_msg_queue->push(DISCONNECT_WIFI);
+		}
+		else
+		{
+			global_msg_queue->push(CONNECT_TO_WIFI);
+		}
+		global_msg_queue->push(OLED_UPDATE);
+	}
+	break;
 	case SYNCRTC:
 	{
+		edit_oled_menu = false;
 		global_msg_queue->push(GET_EPOCH);
 		global_msg_queue->push(RTC_UPDATE);
+		global_msg_queue->push(OLED_UPDATE);
 	}
 	break;
 	default:
@@ -706,7 +776,7 @@ void OLED::bound_scroll_counter(int8_t low, int8_t high, uint8_t height)
 
 int8_t OLED::line_selection[] = {-20, OLED_LINE_1_Y, OLED_LINE_2_Y, OLED_LINE_3_Y, OLED_LINE_4_Y};
 
-void OLED::oled_draw_logo()
+void OLED::menu_weather_forecast()
 {
 	m_display->clearDisplay();
 

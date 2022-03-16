@@ -20,7 +20,7 @@ Messenger messenger;
 History history;
 Weather weather;
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
-OLED oled = OLED(&display, clk, &history, &weather, settings, sensor);
+OLED oled = OLED(&display, clk, &history, &messenger, &weather, settings, sensor);
 Thermostat thermostat = Thermostat(clk, settings, sensor);
 std::queue<int> msg_queue;
 
@@ -48,18 +48,17 @@ void TC3_Handler(void)
 }
 
 void service_msg_queue();
-void printWifiStatus();
 
 void setup()
 {
-  Serial.begin(9600);
+  Serial.begin(115200);
   global_msg_queue = &msg_queue;
   display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS);
   initGPIO();
   initI2C();
   initTimers();
-  initWiFi();
-  printWifiStatus();
+  initWiFi(messenger);
+  delay(3000);
   initRTC(rtc);
   thermostat.initialize();
   messenger.initialize();
@@ -67,7 +66,6 @@ void setup()
   msg_queue.push(GET_EPOCH);
   msg_queue.push(RTC_UPDATE);
   msg_queue.push(SAMPLE_AIR);
-  msg_queue.push(UPDATE_SCHEDULE);
   msg_queue.push(OLED_ON);
 }
 
@@ -83,8 +81,6 @@ void service_msg_queue()
   while (!msg_queue.empty())
   {
     int msg = msg_queue.front();
-    Serial.println("Servicing");
-    Serial.println(msg);
     switch (msg)
     {
     case SAMPLE_AIR:
@@ -161,14 +157,24 @@ void service_msg_queue()
     case CHECK_FOR_UDP_MSG:
     {
       int msg = messenger.check_inbox();
-
-      if (msg == 1)
-      {
-        msg_queue.push(GET_TEMPORARY_OVERRIDE);
-      }
-      else if (msg == 2)
-      {
-        msg_queue.push(UPDATE_SCHEDULE);
+      if (msg) {
+        if (msg == TEMPORARY)
+        {
+          msg_queue.push(GET_TEMPORARY_OVERRIDE);
+        }
+        else if (msg == SCHEDULE_UPDATED)
+        {
+          msg_queue.push(UPDATE_SCHEDULE);
+        }
+        else if (msg == SERVER_UP)
+        {
+          if (!messenger.server_found()) {
+            msg_queue.push(CONNECT_TO_SERVER);
+          }
+          else {
+            msg_queue.push(UPDATE_SCHEDULE);
+          }
+        }
       }
       break;
     }
@@ -274,6 +280,27 @@ void service_msg_queue()
       msg_queue.push(START_SCREEN_TIMEOUT);
       break;
     }
+    case CONNECT_TO_SERVER:
+    {
+      if (!messenger.server_found() && messenger.obtain_server_IP())
+      {
+        msg_queue.push(UPDATE_SCHEDULE);
+      }
+      break;
+    }
+    case CONNECT_TO_WIFI:
+    {
+      if (messenger.connect_to_wifi(1) == WL_CONNECTED)
+      {
+        msg_queue.push(CONNECT_TO_SERVER);
+      }
+      break;
+    }
+    case DISCONNECT_WIFI:
+    {
+      messenger.disconnect_wifi();
+      break;
+    }
     default:
       break;
     } // end switch
@@ -281,31 +308,4 @@ void service_msg_queue()
     msg_queue.pop();
   }
   
-}
-
-void printWifiStatus() {
-
-  // print the SSID of the network you're attached to:
-
-  Serial.print("SSID: ");
-
-  Serial.println(WiFi.SSID());
-
-  // print your board's IP address:
-
-  IPAddress ip = WiFi.localIP();
-
-  Serial.print("IP Address: ");
-
-  Serial.println(ip);
-
-  // print the received signal strength:
-
-  long rssi = WiFi.RSSI();
-
-  Serial.print("signal strength (RSSI):");
-
-  Serial.print(rssi);
-
-  Serial.println(" dBm");
 }

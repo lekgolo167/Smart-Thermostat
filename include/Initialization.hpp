@@ -6,9 +6,9 @@
 #include <WiFiNINA.h>
 
 #include "Constants.hpp"
-#include "WiFiSecrets.h"
 #include "Timers.hpp"
 #include "MesgQueue.hpp"
+#include "Messenger.hpp"
 
 void initI2C();
 
@@ -16,6 +16,6 @@ void initGPIO();
 
 void initTimers();
 
-void initWiFi();
+void initWiFi(Messenger& messenger);
 
 void initRTC(RTCZero& rtc);

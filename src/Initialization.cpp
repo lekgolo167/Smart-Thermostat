@@ -1,23 +1,36 @@
 #include "Initialization.hpp"
 
+uint32_t lastinput = 0;
+
 static void isr_button_A()
 {
+  if (millis() - lastinput < 5)
+    return;
+  lastinput = millis();
   global_msg_queue->push(OLED_NEXT_MENU);
 }
 
 static void isr_button_B()
 {
+  if (millis() - lastinput < 5)
+    return;
+  lastinput = millis();
   global_msg_queue->push(OLED_PREV_MENU);
 }
 
 static void isr_rotary_btn()
 {
+  if (millis() - lastinput < 5)
+    return;
+  lastinput = millis();
   global_msg_queue->push(OLED_EDIT_MENU);
 }
 
 static void isr_rotary()
 {
-
+  if (millis() - lastinput < 5)
+    return;
+  lastinput = millis();
   PinStatus rotary_A_state = digitalRead(ROTARY_A_PIN);
   PinStatus rotary_B_state = digitalRead(ROTARY_B_PIN);
 
@@ -78,17 +91,19 @@ void initTimers()
   TC3_start_timer();
 }
 
-void initWiFi()
+void initWiFi(Messenger& messenger)
 {
-  Serial.print("WIFI status: ");
-  Serial.println(WiFi.begin(WIFI_SSID, WIFI_PASSWORD));
+  WiFi.setHostname(DEVICE_NAME);
+  int r =messenger.connect_to_wifi(3);
+  Serial.print("WiFi Connection Status: ");
+  Serial.println(r);
 }
 
 void initRTC(RTCZero &rtc)
 {
   rtc.begin();
-  rtc.setTime(21, 33, 0);
-  rtc.setDate(9, 8, 21);
+  rtc.setTime(12, 30, 0);
+  rtc.setDate(15, 3, 22);
 
   REG_RTC_FREQCORR = 127;
   REG_RTC_FREQCORR |= RTC_FREQCORR_SIGN;

@@ -9,6 +9,7 @@
 #include "Thermostat.hpp"
 #include "History.hpp"
 #include "Weather.hpp"
+#include "Messenger.hpp"
 
 #define OLED_NUM_MENUS 7
 
@@ -39,7 +40,7 @@
 class OLED
 {
 public:
-	OLED(Adafruit_SSD1306* display, tm* clk, History* history, Weather* weather, thermostat_settings* settings, sensor_readings* sensor);
+	OLED(Adafruit_SSD1306* display, tm* clk, History* history, Messenger* messenger, Weather* weather, thermostat_settings* settings, sensor_readings* sensor);
 	~OLED();
 	void next_menu();
 	void previous_menu();
@@ -51,7 +52,7 @@ public:
 	void set_runtime(uint32_t runtime);
 
 private:
-	void oled_draw_logo();
+	void menu_weather_forecast();
 	void draw_history_graph();
 	void menu_sensor_data();
 	void menu_sample_settings();
@@ -60,6 +61,7 @@ private:
 	void menu_motion_settings();
 	void menu_date_and_time();
 	void menu_current_cycle();
+	void menu_wifi_status();
 
 	void update_user_settings();
 	void update_temporary_setting_value();
@@ -69,6 +71,7 @@ private:
 	thermostat_settings *m_settings;
 	sensor_readings *m_sensor;
 	History* m_history;
+	Messenger* m_messenger;
 	Weather* m_weather;
 	tm *m_time;
 	uint32_t m_furnace_runtime;
@@ -93,6 +96,7 @@ private:
 		SCREENTIMEOUT,
 		MOTIONDETECTION,
 		SYNCRTC,
+		TOGGLE_WIFI,
 		OVERRIDE
 	};
 };
