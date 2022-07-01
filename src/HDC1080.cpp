@@ -58,23 +58,16 @@ void HYGROI2C::writeRegI2C(uint8_t bReg, uint16_t bVal)
 */
 bool HYGROI2C::readRegI2C(uint8_t bReg, uint16_t &rVal, unsigned long delay_ms)
 {
-    int n, i;
     Wire.beginTransmission(HDC1080_I2C_ADDR);
     Wire.write(bReg); // send register address
-    if (delay_ms > 0)
-        delay(delay_ms); // wait for conversion to complete
-    n = Wire.requestFrom(HDC1080_I2C_ADDR, 2);
-    if (n != 2)
-    {
-        for (i = 0; i < n; i++)
-            Wire.read(); // ensure any bad bytes aren't left in the buffer
-        return false;
-    }
-    while (Wire.available())
-    {
-        rVal <<= 8;
-        rVal |= (uint16_t)Wire.read(); // shift and set in received bytes, most significant first
-    }
+    Wire.endTransmission();
+    delay(delay_ms); // wait for conversion to complete
+    Wire.requestFrom(HDC1080_I2C_ADDR, 2);
+
+    byte msb = Wire.read();
+  byte lsb = Wire.read();
+
+    rVal = (msb << 8) | lsb;
     return true;
 }
 
@@ -100,8 +93,10 @@ void HYGROI2C::begin()
     Wire.beginTransmission(HDC1080_I2C_ADDR);
     // Send config register address then
     // Send setup bytes, software reset bit ON, all others are default
-    const uint8_t HDC1080_config[] = {HDC1080_CONFIG_REG, 0x80, 0x00};
-    Wire.write(HDC1080_config, sizeof(HDC1080_config));
+    Wire.write(HDC1080_CONFIG_REG);
+    Wire.write(0x00);
+    Wire.write(0x00);
+    Wire.endTransmission();
 }
 
 /* ------------------------------------------------------------ */
@@ -125,11 +120,14 @@ float HYGROI2C::getTemperature()
 {
     uint16_t raw_t;
     float deg_c;
-    readRegI2C(HDC1080_TMP_REG, raw_t, 7); // conversion time for temperature at 14 bit resolution is 6.5 ms
-    deg_c = (float)raw_t / 0x10000;
-    deg_c *= 165.0;
-    deg_c -= 40.0; // conversion provided in reference manual
-    return deg_c;
+    if (readRegI2C(HDC1080_TMP_REG, raw_t, 9)) {
+        deg_c = (float)raw_t / 0x10000;
+        deg_c *= 165.0;
+        deg_c -= 40.0; // conversion provided in reference manual
+        return deg_c;
+    } // conversion time for temperature at 14 bit resolution is 6.5 ms
+    Serial.println("Failed to get temperature");
+    return 117.0;
 }
 
 /* ------------------------------------------------------------ */
@@ -157,6 +155,20 @@ float HYGROI2C::getHumidity()
     per_rh = (float)raw_h / 0x10000;
     per_rh *= 100.0; // conversion provided in reference manual
     return per_rh;
+}
+
+void HYGROI2C::selfTest(bool enabled)
+{
+    uint16_t config_reg;
+    readRegI2C(HDC1080_CONFIG_REG, config_reg, 1);
+    if (enabled) {
+        config_reg |= HEATER_EN_BIT;
+    }
+    else{
+        config_reg &= ~(HEATER_EN_BIT);
+
+    }
+    writeRegI2C(HDC1080_CONFIG_REG, config_reg);
 }
 
 /* ------------------------------------------------------------ */

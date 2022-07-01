@@ -81,6 +81,8 @@ void service_msg_queue()
   while (!msg_queue.empty())
   {
     int msg = msg_queue.front();
+    Serial.print("Servicing: ");
+    Serial.println(msg);
     switch (msg)
     {
     case SAMPLE_AIR:
@@ -91,13 +93,20 @@ void service_msg_queue()
       msg_queue.push(OLED_UPDATE);
       msg_queue.push(CHECK_FOR_UDP_MSG);
       msg_queue.push(SEND_SERVER_TEMPERATURE);
+      if (thermostat.self_test_running())
+      {
+        msg_queue.push(SELF_TEST);
+      }
       break;
     }
     case RTC_UPDATE:
     {
       time_t current_time = rtc.getEpoch();
       tm *current_clk = localtime(&current_time);
-
+      if (clk->tm_mon != current_clk->tm_mon)
+      {
+        msg_queue.push(SELF_TEST);
+      }
       clk->tm_hour = current_clk->tm_hour;
       clk->tm_min = current_clk->tm_min;
       clk->tm_sec = current_clk->tm_sec;
@@ -120,13 +129,20 @@ void service_msg_queue()
       if (epoch) {
         rtc.setEpoch(epoch);
       }
+      break;
     }
     case UPDATE_SAMPLE_PERIOD:
     {
       TC4_reconfigure(settings->sample_period_sec);
+      break;
     }
     case UPDATE_SAMPLE_SUM:
     {
+      break;
+    }
+    case SET_FILTER:
+    {
+      thermostat.set_filter_method(oled.get_filter());
       break;
     }
     case MOTION_DETECTED:
@@ -139,7 +155,7 @@ void service_msg_queue()
     }
     case NO_MOTION:
     {
-      if (digitalRead(MOTION_SENSOR_PIN) == HIGH) {
+      if (digitalRead(MOTION_SENSOR_PIN) == LOW) {
         TC3_stop_timer();
         msg_queue.push(OLED_OFF);
       }
@@ -299,6 +315,23 @@ void service_msg_queue()
     case DISCONNECT_WIFI:
     {
       messenger.disconnect_wifi();
+      break;
+    }
+    case SELF_TEST:
+    {
+      thermostat.self_test();
+      break;
+    }
+    case SELF_TEST_DONE:
+    {
+      if (thermostat.self_test_passed())
+      {
+        Serial.println("Self test passed");
+      }
+      else
+      {
+        Serial.println("Self test failed");
+      }
       break;
     }
     default:

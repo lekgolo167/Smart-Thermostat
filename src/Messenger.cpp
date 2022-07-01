@@ -166,7 +166,7 @@ int Messenger::get_request(const char *path, char *buffer, size_t size) {
 		// Connection established
 		client.print("GET ");
 		client.print(path);
-		client.println(" HTTP/1.0");
+		client.println(" HTTP/1.1");
 		client.print("Host: ");
 		client.print(m_server_str);
 		client.print(":");
@@ -192,13 +192,17 @@ int Messenger::get_request(const char *path, char *buffer, size_t size) {
 		{
 			received = true;
 			// check for valid response
-			if (!client.find("HTTP/1.0"))
+			if (!client.find("HTTP/1.1"))
 			{
+				Serial.println("NO HTTP 1.1");
+				client.stop();
 				return -1;
 			}
 			int status_code = client.parseInt();
 			if (!client.find("Content-Length:"))
 			{
+				Serial.println("Cannot find content length");
+				client.stop();
 				return -1;
 			}
 			int content_lenght = client.parseInt();
@@ -212,7 +216,6 @@ int Messenger::get_request(const char *path, char *buffer, size_t size) {
 			}
 		}
 	}
-
 	client.stop();
 
 	return data_length;

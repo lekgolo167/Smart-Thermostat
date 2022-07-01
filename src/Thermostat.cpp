@@ -10,7 +10,7 @@ Thermostat::Thermostat(tm *clk, thermostat_settings *settings, sensor_readings *
 	m_settings->upper_threshold = 1.0;
 	m_settings->target_temperature = 70.0;
 	m_settings->sample_period_sec = 30;
-	m_settings->total_samples = 5;
+	m_settings->total_samples = 10;
 	m_settings->screen_timeout_millis = 15 * 1000;
 	m_settings->override_timeout_millis = 60 * 60 * 1000;
 	m_settings->motion_timeout_millis = 48 * 60 * 60 * 1000;
@@ -20,6 +20,14 @@ Thermostat::Thermostat(tm *clk, thermostat_settings *settings, sensor_readings *
 	m_override_ON = false;
 	m_furnace_runtime = 0;
 	m_motion_timestamp = millis();
+	filter_method = &Thermostat::calc_avg_room_temperature;
+
+	estimated_t = 72.0;
+	k = 1.0;
+	p = pow(estimated_t, 4.0);
+	omega = pow(0.36, 2.0);
+	// q = 0.000244140625;
+	q = 0.00048828125;
 
 	int id = -1;
 	for (uint8_t day = 0; day < 7; day++)
@@ -43,7 +51,60 @@ void Thermostat::initialize()
 	{
 		m_temperature_samples[i] = m_sensor->temperature_F;
 	}
-	m_temperatures_sum = m_sensor->temperature_F * 5.0;
+	m_temperatures_sum = m_sensor->temperature_F * m_settings->total_samples;
+	m_sensor->k_estimate = m_sensor->temperature_F;
+}
+
+void Thermostat::set_filter_method(int8_t filter)
+{
+	if (filter == KALMAN)
+	{
+		filter_method = &Thermostat::kalman_filter;
+	}
+	else if (filter == AVERAGE)
+	{
+		filter_method = &Thermostat::calc_avg_room_temperature;
+	}
+	else if (filter == NONE)
+	{
+		filter_method = &Thermostat::no_filter;
+	}
+}
+
+bool Thermostat::self_test_running()
+{
+	return m_test_running;
+}
+
+bool Thermostat::self_test_passed()
+{
+	return z_score > 4.0;
+}
+
+void Thermostat::self_test()
+{
+	if (!m_test_running)
+	{
+		m_test_running = true;
+		htu.selfTest(true);
+		float variance = 0.0;
+		for (int i = 0; i < m_settings->total_samples; i++)
+		{
+			variance += pow((m_temperature_samples[i] - m_sensor->average_temperature), 2);
+		}
+		m_std_deviation = sqrt(variance / (m_settings->total_samples - 1));
+		m_test_start_time = millis();
+		z_score = 0.0;
+	}
+	if (m_test_running && (millis() - m_test_start_time > 180 * 1000 || z_score > 4.0))
+	{
+		m_test_running = false;
+		htu.selfTest(false);
+		global_msg_queue->push(SELF_TEST_DONE);
+	}
+	else {
+		z_score = (m_sensor->temperature_F - m_sensor->average_temperature) / m_std_deviation;
+	}
 }
 
 void Thermostat::update_cycle()
@@ -71,7 +132,7 @@ void Thermostat::update_cycle()
 
 void Thermostat::run_cycle()
 {
-	float room_temperature = calc_avg_room_temperature();
+	float room_temperature = (*this.*filter_method)();
 	bool motion_detected = motion_timeout_check();
 	manage_temporary_override();
 	update_cycle();
@@ -114,8 +175,17 @@ void Thermostat::toggle_furnace_relay(bool power_ON)
 	}
 }
 
+float Thermostat::no_filter()
+{
+	return m_sensor->temperature_F;
+}
+
 float Thermostat::calc_avg_room_temperature()
 {
+	if (m_test_running) 
+	{
+		return m_sensor->average_temperature;
+	}
 	float old_temperature = m_temperature_samples[m_sample_avg_index];
 	m_temperature_samples[m_sample_avg_index++] = m_sensor->temperature_F;
 	if (m_sample_avg_index >= m_settings->total_samples)
@@ -129,17 +199,30 @@ float Thermostat::calc_avg_room_temperature()
 	return m_sensor->average_temperature;
 }
 
+float Thermostat::kalman_filter()
+{
+	// estimate uncertainty p
+	p = p + q;
+	// kalman estimate
+	k = p / (p + omega);
+	// estimate true temperature measured
+	estimated_t = estimated_t + k * (m_sensor->temperature_F - estimated_t);
+	// update uncertainty p
+	p = (1 - k) * p;
+
+	m_sensor->k_estimate = estimated_t;
+	return estimated_t;
+}
+
 void Thermostat::sample_air()
 {
-	float t = htu.readTemperature();
-	float h = htu.readHumidity();
-	if ((int)t > 900)
-		return;
+	float t = htu.getTemperature();
+	float h = htu.getHumidity();
+
 	m_sensor->temperature_C = t;
 	m_sensor->temperature_F = 9.0 / 5.0 * m_sensor->temperature_C + 32.0;
-	if ((int)h > 900)
-		return;
-	m_sensor->humidity = htu.readHumidity();
+
+	m_sensor->humidity = h;
 }
 
 bool Thermostat::motion_timeout_check()

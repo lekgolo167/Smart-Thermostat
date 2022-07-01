@@ -145,6 +145,23 @@ float HTU21D::readTemperature(void)
   return(realTemperature);  
 }
 
+void HTU21D::selfTest(bool enabled)
+{
+  byte userRegister = read_user_register(); //Go get the current register state
+  if (enabled)
+  {
+    userRegister |= HEATER_EN_BIT; //Turn on the heater
+  }
+  else
+  {
+    userRegister &= ~(HEATER_EN_BIT); //Turn off the heater
+  }
+    Wire.beginTransmission(HTDU21D_ADDRESS);
+    Wire.write(WRITE_USER_REG); //Write to the user register
+    Wire.write(userRegister); //Write the new resolution bits
+    Wire.endTransmission();
+}
+
 //Set sensor resolution
 /*******************************************************************************************/
 //Sets the sensor resolution to one of four levels

@@ -50,6 +50,7 @@ public:
 	void off();
 	void rotary_dial(uint8_t direction);
 	void set_runtime(uint32_t runtime);
+	int8_t get_filter();
 
 private:
 	void menu_weather_forecast();
@@ -79,6 +80,7 @@ private:
 	int8_t oled_menu_state;
 	int8_t oled_menu_item;
 	int8_t temporary_setting;
+	int8_t m_filter;
 	char buffer[25];
 	bool edit_oled_menu;
 	bool oled_screen_ON;
@@ -93,6 +95,7 @@ private:
 		BASELINE,
 		TOTALSAMPLES,
 		SAMPLEPERIOD,
+		FILTERTYPE,
 		SCREENTIMEOUT,
 		MOTIONDETECTION,
 		SYNCRTC,

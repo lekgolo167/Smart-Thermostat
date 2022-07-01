@@ -18,15 +18,6 @@
 
 #include <Wire.h>
 
-#define HTDU21D_ADDRESS 0x40  //Unshifted 7-bit I2C address for the sensor
-
-#define TRIGGER_TEMP_MEASURE_HOLD  0xE3
-#define TRIGGER_HUMD_MEASURE_HOLD  0xE5
-#define TRIGGER_TEMP_MEASURE_NOHOLD  0xF3
-#define TRIGGER_HUMD_MEASURE_NOHOLD  0xF5
-#define WRITE_USER_REG  0xE6
-#define READ_USER_REG  0xE7
-#define SOFT_RESET  0xFE
 
 class HTU21D {
 
@@ -38,8 +29,17 @@ public:
   float readHumidity(void);
   float readTemperature(void);
   void setResolution(byte resBits);
+  void selfTest(bool enabled);
 
   //Public Variables
+  static struct {
+    // temperature and humidity resolutions (cannot be set independently)
+    const byte TEMP_14b_RH_12b = 0b00000000;
+    const byte TEMP_13b_RH_10b = 0b10000000;
+    const byte TEMP_12b_RH_8 = 0b00000001;
+    const byte TEMP_11b_RH_11b = 0b10000001;
+
+  } HTU21D_Resolutions;
 
 private:
   //Private Functions
@@ -48,5 +48,14 @@ private:
   byte check_crc(uint16_t message_from_sensor, uint8_t check_value_from_sensor);
 
   //Private Variables
+  static const byte HTDU21D_ADDRESS = 0x40;
+  static const byte TRIGGER_TEMP_MEASURE_HOLD = 0xE3;
+  static const byte TRIGGER_HUMD_MEASURE_HOLD = 0xE5;
+  static const byte TRIGGER_TEMP_MEASURE_NOHOLD = 0xF3;
+  static const byte TRIGGER_HUMD_MEASURE_NOHOLD = 0xF5;
+  static const byte WRITE_USER_REG = 0xE6;
+  static const byte READ_USER_REG = 0xE7;
+  static const byte SOFT_RESET = 0xFE;
+  static const byte HEATER_EN_BIT = 0x04;
 
 };

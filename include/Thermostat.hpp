@@ -6,7 +6,7 @@
 #include "CycleList.hpp"
 #include "Messenger.hpp"
 #include "Constants.hpp"
-#include "HTU21D.hpp"
+#include "HDC1080.hpp"
 #include "MesgQueue.hpp"
 
 struct sensor_readings
@@ -14,6 +14,7 @@ struct sensor_readings
 	float temperature_F;
 	float temperature_C;
 	float average_temperature;
+	float k_estimate;
 	float humidity;
 };
 
@@ -34,6 +35,12 @@ struct thermostat_settings
 class Thermostat
 {
 public:
+	enum Temperature_Filters{
+		KALMAN,
+		AVERAGE,
+		NONE
+	};
+
 	Thermostat(tm *clk, thermostat_settings *settings, sensor_readings *sensor);
 	void run_cycle();
 	void initialize();
@@ -44,6 +51,10 @@ public:
 	void start_temporary_override();
 	void set_moition_timestamp();
 	uint32_t get_motion_timestamp();
+	void set_filter_method(int8_t filter);
+	bool self_test_running();
+	bool self_test_passed();
+	void self_test();
 
 private:
 	void update_cycle();
@@ -51,9 +62,12 @@ private:
 	void manage_temporary_override();
 	void toggle_furnace_relay(bool power_ON);
 	float calc_avg_room_temperature();
+	float kalman_filter();
+	float no_filter();
+	float (Thermostat::*filter_method)(void);
 
 	tm *m_time;
-	HTU21D htu;
+	HYGROI2C htu;
 	thermostat_settings *m_settings;
 	sensor_readings *m_sensor;
 	float m_temperature_samples[20];
@@ -62,6 +76,15 @@ private:
 	bool m_initialized_from_server;
 	bool m_furnace_ON;
 	bool m_override_ON;
+	bool m_test_running;
+	float m_std_deviation;
+	float z_score;
+	float estimated_t;
+	float k;
+	float p;
+	float omega;
+	float q;
+	uint32_t m_test_start_time;
 	uint32_t m_motion_timestamp;
 	uint32_t m_furnace_start_time;
 	uint32_t m_furnace_runtime;

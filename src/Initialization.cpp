@@ -4,7 +4,7 @@ uint32_t lastinput = 0;
 
 static void isr_button_A()
 {
-  if (millis() - lastinput < 5)
+  if (millis() - lastinput < 20)
     return;
   lastinput = millis();
   global_msg_queue->push(OLED_NEXT_MENU);
@@ -12,7 +12,7 @@ static void isr_button_A()
 
 static void isr_button_B()
 {
-  if (millis() - lastinput < 5)
+  if (millis() - lastinput < 20)
     return;
   lastinput = millis();
   global_msg_queue->push(OLED_PREV_MENU);
@@ -20,7 +20,7 @@ static void isr_button_B()
 
 static void isr_rotary_btn()
 {
-  if (millis() - lastinput < 5)
+  if (millis() - lastinput < 20)
     return;
   lastinput = millis();
   global_msg_queue->push(OLED_EDIT_MENU);
@@ -28,7 +28,7 @@ static void isr_rotary_btn()
 
 static void isr_rotary()
 {
-  if (millis() - lastinput < 5)
+  if (millis() - lastinput < 20)
     return;
   lastinput = millis();
   PinStatus rotary_A_state = digitalRead(ROTARY_A_PIN);
@@ -76,7 +76,7 @@ void initGPIO()
   attachInterrupt(digitalPinToInterrupt(ROTARY_BTN_PIN), isr_rotary_btn, FALLING);
   // Motion Sensor
   pinMode(MOTION_SENSOR_PIN, INPUT_PULLDOWN);
-  attachInterrupt(digitalPinToInterrupt(MOTION_SENSOR_PIN), isr_motion, FALLING);
+  attachInterrupt(digitalPinToInterrupt(MOTION_SENSOR_PIN), isr_motion, RISING);
   // // Furnace Relay
   pinMode(FURNACE_RELAY_PIN, OUTPUT);
   digitalWrite(FURNACE_RELAY_PIN, LOW);
@@ -94,7 +94,7 @@ void initTimers()
 void initWiFi(Messenger& messenger)
 {
   WiFi.setHostname(DEVICE_NAME);
-  int r =messenger.connect_to_wifi(3);
+  int r = messenger.connect_to_wifi(3);
   Serial.print("WiFi Connection Status: ");
   Serial.println(r);
 }
@@ -103,7 +103,7 @@ void initRTC(RTCZero &rtc)
 {
   rtc.begin();
   rtc.setTime(12, 30, 0);
-  rtc.setDate(15, 3, 22);
+  rtc.setDate(1, 7, 22);
 
   REG_RTC_FREQCORR = 127;
   REG_RTC_FREQCORR |= RTC_FREQCORR_SIGN;

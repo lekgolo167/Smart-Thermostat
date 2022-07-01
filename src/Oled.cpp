@@ -17,6 +17,7 @@ OLED::OLED(Adafruit_SSD1306 *display, tm *clk, History* history, Messenger* mess
 	oled_screen_ON = true;
 	oled_scroll_counter = 0;
 	m_furnace_runtime = 0;
+	m_filter = Thermostat::Temperature_Filters::AVERAGE;
 	String s;
 }
 
@@ -91,7 +92,7 @@ void OLED::update()
 			oled_menu_state = 0;
 		}
 		else if (oled_menu_state < 0) {
-			oled_menu_state = 8;
+			oled_menu_state = 9;
 		}
 		update();
 		break;
@@ -272,7 +273,7 @@ void OLED::menu_sensor_data()
 
 void OLED::menu_sample_settings()
 {
-	int8_t items[] = {-1, TOTALSAMPLES, SAMPLEPERIOD};
+	int8_t items[] = {-1, TOTALSAMPLES, SAMPLEPERIOD, FILTERTYPE};
 
 	// Clear OLED buffer
 	m_display->clearDisplay();
@@ -308,9 +309,33 @@ void OLED::menu_sample_settings()
 	// Draw sample period in seconds at line 2
 	m_display->setCursor(1, OLED_LINE_2_Y);
 	m_display->println(buffer);
+	int8_t filter = m_filter;
+	if (edit_oled_menu && oled_menu_item == FILTERTYPE)
+	{
+		filter = temporary_setting % 3;
+	}
+	
+	if (filter == Thermostat::Temperature_Filters::KALMAN){
+		sprintf(buffer, "Filter: %s", "Kalman");
+	}
+	else if (filter == Thermostat::Temperature_Filters::AVERAGE){
+		sprintf(buffer, "Filter: %s", "Average");
+	}
+	else if (filter == Thermostat::Temperature_Filters::NONE){
+		sprintf(buffer, "Filter: %s", "None");
+	}
+
+	m_display->setCursor(1, OLED_LINE_3_Y);
+	m_display->println(buffer);
+
+	sprintf(buffer, "K-estimate:  %.1f F\367", m_sensor->k_estimate);
+
+	// k-estimate at line 4
+	m_display->setCursor(1, OLED_LINE_4_Y);
+	m_display->println(buffer);
 
 	// Confine the scroll line of the menu
-	bound_scroll_counter(1, 2, 9);
+	bound_scroll_counter(1, 3, 9);
 
 	// Save which item we are editing
 	oled_menu_item = items[oled_scroll_counter];
@@ -660,6 +685,12 @@ void OLED::update_user_settings()
 			m_settings->sample_period_sec = temporary_setting;
 			global_msg_queue->push(UPDATE_SAMPLE_PERIOD);
 		}
+	}
+	break;
+	case FILTERTYPE:
+	{
+		m_filter = temporary_setting % 3;
+		global_msg_queue->push(SET_FILTER);
 	}
 	break;
 	case SCREENTIMEOUT:

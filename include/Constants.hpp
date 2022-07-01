@@ -4,7 +4,7 @@
 
 const inline char WEEKDAY_NAMES[7][4] = {"sun", "mon", "tue", "wed", "thu", "fri", "sat"};
 const inline char DEVICE_NAME[] = "Thermostat";
-const inline char SERVER_NAME[] = "DESKTOP-9H68C9T";
+const inline char SERVER_NAME[] = "crumpster";
 
 // Buttons
 const uint8_t BUTTON_A_PIN = 9;
