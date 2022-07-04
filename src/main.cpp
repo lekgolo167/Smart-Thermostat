@@ -70,13 +70,13 @@ void setup()
   msg_queue.push(SAMPLE_AIR);
   msg_queue.push(OLED_ON);
   logger.info("Thermostat has started up");
-  logger.send();
 }
 
 // the loop function runs over and over again forever
 void loop()
 {
   service_msg_queue();
+  logger.send();
 }
 
 void service_msg_queue()

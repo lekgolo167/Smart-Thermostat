@@ -110,6 +110,10 @@ bool Messenger::check_server_available(const SERVER msg) {
 }
 
 bool Messenger::post_request(const char *path, const char *msg, int len) {
+	return post_request(path, msg, len, SERVER_POST_PORT);
+}
+
+bool Messenger::post_request(const char *path, const char *msg, int len, uint16_t port) {
 	if (!m_server_found)
 	{
 		return false;
@@ -124,7 +128,7 @@ bool Messenger::post_request(const char *path, const char *msg, int len) {
 	WiFiClient client;
 
 	// Connect to the server
-	if (client.connect(m_remoteIP, SERVER_POST_PORT))
+	if (client.connect(m_remoteIP, port))
 	{
 		// Connection established
 		client.print("POST ");
@@ -133,7 +137,7 @@ bool Messenger::post_request(const char *path, const char *msg, int len) {
 		client.print("Host: ");
 		client.print(m_server_str);
 		client.print(":");
-		client.println(SERVER_POST_PORT);
+		client.println(port);
 		client.println("Content-Type: application/x-www-form-urlencoded");
 		client.print("Content-Length: ");
 		client.println(len);
