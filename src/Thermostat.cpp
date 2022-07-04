@@ -1,8 +1,9 @@
 #include "Thermostat.hpp"
 
-Thermostat::Thermostat(tm *clk, thermostat_settings *settings, sensor_readings *sensor)
+Thermostat::Thermostat(tm *clk, Logging* logger, thermostat_settings *settings, sensor_readings *sensor)
 {
 	m_time = clk;
+	m_logger = logger;
 	m_settings = settings;
 	m_sensor = sensor;
 	m_settings->baseline_temperature = 55.0;
@@ -60,14 +61,17 @@ void Thermostat::set_filter_method(int8_t filter)
 	if (filter == KALMAN)
 	{
 		filter_method = &Thermostat::kalman_filter;
+		m_logger->info("Filter set to KALMAN");
 	}
 	else if (filter == AVERAGE)
 	{
 		filter_method = &Thermostat::calc_avg_room_temperature;
+		m_logger->info("Filter set to AVERAGE");
 	}
 	else if (filter == NONE)
 	{
 		filter_method = &Thermostat::no_filter;
+		m_logger->info("Filter set to NONE");
 	}
 }
 

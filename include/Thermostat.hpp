@@ -8,6 +8,7 @@
 #include "Constants.hpp"
 #include "HDC1080.hpp"
 #include "MesgQueue.hpp"
+#include "Logging.hpp"
 
 struct sensor_readings
 {
@@ -41,7 +42,7 @@ public:
 		NONE
 	};
 
-	Thermostat(tm *clk, thermostat_settings *settings, sensor_readings *sensor);
+	Thermostat(tm *clk, Logging* logger, thermostat_settings *settings, sensor_readings *sensor);
 	void run_cycle();
 	void initialize();
 	void sample_air();
@@ -68,6 +69,7 @@ private:
 
 	tm *m_time;
 	HYGROI2C htu;
+	Logging* m_logger;
 	thermostat_settings *m_settings;
 	sensor_readings *m_sensor;
 	float m_temperature_samples[20];

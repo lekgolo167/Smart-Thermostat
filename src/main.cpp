@@ -11,6 +11,7 @@
 #include "Messenger.hpp"
 #include "History.hpp"
 #include "Weather.hpp"
+#include "Logging.hpp"
 
 sensor_readings *sensor = new sensor_readings;
 thermostat_settings *settings = new thermostat_settings;
@@ -19,9 +20,10 @@ RTCZero rtc;
 Messenger messenger;
 History history;
 Weather weather;
+Logging logger = Logging(&messenger);
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
-OLED oled = OLED(&display, clk, &history, &messenger, &weather, settings, sensor);
-Thermostat thermostat = Thermostat(clk, settings, sensor);
+OLED oled = OLED(&display, clk, &history, &messenger, &weather, &logger, settings, sensor);
+Thermostat thermostat = Thermostat(clk, &logger, settings, sensor);
 std::queue<int> msg_queue;
 
 const int BUFF_SIZE = 256;
@@ -67,6 +69,8 @@ void setup()
   msg_queue.push(RTC_UPDATE);
   msg_queue.push(SAMPLE_AIR);
   msg_queue.push(OLED_ON);
+  logger.info("Thermostat has started up");
+  logger.send();
 }
 
 // the loop function runs over and over again forever
@@ -93,6 +97,7 @@ void service_msg_queue()
       msg_queue.push(OLED_UPDATE);
       msg_queue.push(CHECK_FOR_UDP_MSG);
       msg_queue.push(SEND_SERVER_TEMPERATURE);
+      logger.send();
       if (thermostat.self_test_running())
       {
         msg_queue.push(SELF_TEST);
@@ -326,11 +331,11 @@ void service_msg_queue()
     {
       if (thermostat.self_test_passed())
       {
-        Serial.println("Self test passed");
+        logger.info("Self test passed!");
       }
       else
       {
-        Serial.println("Self test failed");
+        logger.error("Self test failed!");
       }
       break;
     }

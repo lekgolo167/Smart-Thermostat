@@ -1,6 +1,6 @@
 #include "Oled.hpp"
 
-OLED::OLED(Adafruit_SSD1306 *display, tm *clk, History* history, Messenger* messenger, Weather* weather, thermostat_settings *settings, sensor_readings *sensor)
+OLED::OLED(Adafruit_SSD1306 *display, tm *clk, History* history, Messenger* messenger, Weather* weather, Logging* logger, thermostat_settings *settings, sensor_readings *sensor)
 {
 	m_settings = settings;
 	m_sensor = sensor;
@@ -8,6 +8,7 @@ OLED::OLED(Adafruit_SSD1306 *display, tm *clk, History* history, Messenger* mess
 	m_history = history;
 	m_messenger = messenger;
 	m_weather = weather;
+	m_logger = logger;
 	m_history->set_grid_scale(55.0, 18.0);
 	m_display = display;
 	m_display->setTextColor(SSD1306_WHITE);
@@ -23,6 +24,11 @@ OLED::OLED(Adafruit_SSD1306 *display, tm *clk, History* history, Messenger* mess
 
 OLED::~OLED()
 {
+}
+
+int8_t OLED::get_filter()
+{
+	return m_filter;
 }
 
 void OLED::update()
@@ -653,6 +659,7 @@ void OLED::update_user_settings()
 		{
 			m_settings->lower_threshold = temporary_setting;
 			global_msg_queue->push(SEND_SERVER_STATS);
+			m_logger->info("Set lower threshold to: " + String(temporary_setting));
 		}
 	}
 	break;
@@ -662,20 +669,27 @@ void OLED::update_user_settings()
 		{
 			m_settings->upper_threshold = temporary_setting;
 			global_msg_queue->push(SEND_SERVER_STATS);
+			m_logger->info("Set upper threshold to: " + String(temporary_setting));
 		}
 	}
 	break;
 	case BASELINE:
 	{
 		if (temporary_setting >= 45 && temporary_setting <= 60)
+		{
 			m_settings->baseline_temperature = temporary_setting;
+			m_logger->info("Set baseline temperature to: " + String(temporary_setting));
+		}
 	}
 	break;
 	case TOTALSAMPLES:
 	{
 		if (temporary_setting >= 1 && temporary_setting <= 20)
+		{
 			m_settings->total_samples = temporary_setting;
-		global_msg_queue->push(UPDATE_SAMPLE_SUM);
+			global_msg_queue->push(UPDATE_SAMPLE_SUM);
+			m_logger->info("Updated number of samples used to: " + String(temporary_setting));
+		}
 	}
 	break;
 	case SAMPLEPERIOD:
@@ -684,6 +698,7 @@ void OLED::update_user_settings()
 		{
 			m_settings->sample_period_sec = temporary_setting;
 			global_msg_queue->push(UPDATE_SAMPLE_PERIOD);
+			m_logger->info("Updated sample period (sec) to: " + String(temporary_setting));
 		}
 	}
 	break;
@@ -696,18 +711,27 @@ void OLED::update_user_settings()
 	case SCREENTIMEOUT:
 	{
 		if (temporary_setting >= 1 && temporary_setting <= 180)
+		{
 			m_settings->screen_timeout_millis = temporary_setting * 1000;
+			m_logger->info("Set screen timout (sec) to: " + String(temporary_setting));
+		}
 	}
 	break;
 	case MOTIONDETECTION:
 	{
 		if (temporary_setting >= 6 && temporary_setting <= 96)
+		{
 			m_settings->motion_timeout_millis = temporary_setting * 3600 * 1000; // convert to milliseconds from hours
+			m_logger->info("Set motion timeout (hrs) to: " + String(temporary_setting));
+		}
 	}
 	case OVERRIDE:
 	{
 		if (temporary_setting >= 15 && temporary_setting <= 180)
+		{
 			m_settings->override_timeout_millis = temporary_setting * 60 * 1000; // convert to milliseconds from minutes
+			m_logger->info("Set temporary timeout (min) to: " + String(temporary_setting));
+		}
 	}
 	break;
 	default:

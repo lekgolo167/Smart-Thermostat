@@ -61,7 +61,7 @@ public:
 	IPAddress& get_localIP();
 	int connect_to_wifi(int tries);
 	void disconnect_wifi();
-	void post_request(const char *path, char *msg, int len);
+	bool post_request(const char *path, const char *msg, int len);
 	int get_request(const char *path, char *buffer, size_t size);
 	int check_inbox();
 	float get_temporary_temperature();

@@ -109,15 +109,15 @@ bool Messenger::check_server_available(const SERVER msg) {
 	} 
 }
 
-void Messenger::post_request(const char *path, char *msg, int len) {
+bool Messenger::post_request(const char *path, const char *msg, int len) {
 	if (!m_server_found)
 	{
-		return;
+		return false;
 	}
 	if (!check_server_available(NODE_RED))
 	{
 		Serial.println("Server unavailable");
-		return;
+		return false;
 	}
 
 	// Prepare the client
@@ -140,9 +140,11 @@ void Messenger::post_request(const char *path, char *msg, int len) {
 		client.println();
 		client.println(msg);
 		client.println();
+		client.stop();
+		return true;
 	}
-
-	client.stop();	
+	client.stop();
+	return false;
 }
 
 int Messenger::get_request(const char *path, char *buffer, size_t size) {
