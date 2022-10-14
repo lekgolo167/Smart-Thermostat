@@ -80,6 +80,7 @@ void initGPIO()
   // // Furnace Relay
   pinMode(FURNACE_RELAY_PIN, OUTPUT);
   digitalWrite(FURNACE_RELAY_PIN, LOW);
+  digitalWrite(STATUS_LED, LOW);
 }
 
 void initTimers()

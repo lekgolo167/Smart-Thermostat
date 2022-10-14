@@ -167,11 +167,13 @@ void Thermostat::toggle_furnace_relay(bool power_ON)
 		{
 			m_furnace_start_time = millis();
 			digitalWrite(FURNACE_RELAY_PIN, HIGH);
+			digitalWrite(STATUS_LED, HIGH);
 		}
 		else
 		{
 			m_furnace_runtime = (millis() - m_furnace_start_time) / 1000; // convert to seconds
 			digitalWrite(FURNACE_RELAY_PIN, LOW);
+			digitalWrite(STATUS_LED, LOW);
 			global_msg_queue->push(SEND_SEVER_RUNTIME);
 		}
 		m_furnace_ON = power_ON;

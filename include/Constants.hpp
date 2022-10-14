@@ -16,7 +16,9 @@ const uint8_t ROTARY_B_PIN = 4;
 const uint8_t ROTARY_BTN_PIN = 3;
 
 // Relay
-const uint8_t FURNACE_RELAY_PIN = 13;
+const uint8_t STATUS_LED = 13;
+const uint8_t FURNACE_RELAY_PIN = 6;
+const uint8_t AC_RELAY_PIN = 5;
 
 // Motion Sensor
 const uint8_t MOTION_SENSOR_PIN = 11;

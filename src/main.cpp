@@ -247,13 +247,13 @@ void service_msg_queue()
     {
       oled.set_runtime(thermostat.get_runtime());
       int len = sprintf(packetBuffer, POST_RUNTIME, thermostat.get_runtime());
-      messenger.post_request(URL_STATS, packetBuffer, len);
+      messenger.post_request(URL_RUNTIME, packetBuffer, len);
       break;
     }
     case SEND_SERVER_FURNACE_STATE:
     {
       int len = sprintf(packetBuffer, POST_FURNACE_STATE, thermostat.get_furnace_state());
-      messenger.post_request(URL_STATS, packetBuffer, len);
+      messenger.post_request(URL_FURNANCE_STATE, packetBuffer, len);
       break;
     }
     case OLED_ON:
