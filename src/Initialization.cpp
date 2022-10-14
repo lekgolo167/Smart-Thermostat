@@ -98,13 +98,22 @@ void initWiFi(Messenger& messenger)
   int r = messenger.connect_to_wifi(3);
   Serial.print("WiFi Connection Status: ");
   Serial.println(r);
+  WiFi.lowPowerMode();
 }
 
 void initRTC(RTCZero &rtc)
 {
   rtc.begin();
-  rtc.setTime(12, 30, 0);
-  rtc.setDate(1, 7, 22);
+  if (WiFi.status() == WL_CONNECTED) {
+    unsigned long epoch = WiFi.getTime();
+    Serial.print('Epoch from WiFi: ');
+    Serial.println(epoch);
+    rtc.setEpoch(epoch);
+  }
+  else {
+    rtc.setTime(12, 30, 0);
+    rtc.setDate(10, 13, 22);
+  }
 
   REG_RTC_FREQCORR = 127;
   REG_RTC_FREQCORR |= RTC_FREQCORR_SIGN;
