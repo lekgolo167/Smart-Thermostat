@@ -53,6 +53,24 @@ void service_msg_queue();
 
 void setup()
 {
+  SYSCTRL->OSC32K.bit.RUNSTDBY = 1;               // Set the internal 32kHz oscillator to run standby mode
+  SYSCTRL->DFLLCTRL.bit.RUNSTDBY = 1;   // Set the DFLL48M 48MHz clock to run on standby
+  while(SYSCTRL->PCLKSR.bit.DFLLRDY);   // Wait for synchronization
+
+  TC4->COUNT32.CTRLA.bit.ENABLE = 0;           // Disable timer TC4
+  while (TC4->COUNT32.STATUS.bit.SYNCBUSY);    // Wait for synchronization
+  TC4->COUNT32.CTRLA.bit.RUNSTDBY = 1;         // Set timer TC4 to run on standby
+  TC4->COUNT32.CTRLA.bit.ENABLE = 1;           // Enable timer TC4
+  while (TC4->COUNT32.STATUS.bit.SYNCBUSY);    // Wait for synchronization
+
+  TC3->COUNT16.CTRLA.bit.ENABLE = 0;           // Disable timer TC3
+  while (TC3->COUNT16.STATUS.bit.SYNCBUSY);    // Wait for synchronization
+  TC3->COUNT16.CTRLA.bit.RUNSTDBY = 1;         // Set timer TC3 to run on standby
+  TC3->COUNT16.CTRLA.bit.ENABLE = 1;           // Enable timer TC3
+  while (TC3->COUNT16.STATUS.bit.SYNCBUSY);    // Wait for synchronization
+
+  SYSCTRL->VREG.bit.RUNSTDBY = 1;    // Keep the voltage regulator in normal configuration during run stanby
+
   Serial.begin(115200);
   global_msg_queue = &msg_queue;
   display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS);
@@ -112,6 +130,10 @@ void service_msg_queue()
       {
         msg_queue.push(SELF_TEST);
       }
+      if (clk->tm_hour != current_clk->tm_hour) {
+        // keep rtc time correct as it loses 24 minutes per day
+		    msg_queue.push(GET_EPOCH);
+      }
       clk->tm_hour = current_clk->tm_hour;
       clk->tm_min = current_clk->tm_min;
       clk->tm_sec = current_clk->tm_sec;
@@ -126,6 +148,7 @@ void service_msg_queue()
         msg_queue.push(GET_FORECAST);
       }
       weather.set_current_weather(clk->tm_hour);
+      messenger.auto_reconnect_wifi();
       break;
     }
     case GET_EPOCH:
@@ -345,5 +368,8 @@ void service_msg_queue()
 
     msg_queue.pop();
   }
-  
+  SysTick->CTRL &= ~SysTick_CTRL_TICKINT_Msk;           // Disable SysTick interrupts
+  __DSB();                                              // Complete outstanding memory operations - not required for SAMD21 ARM Cortex M0+
+  __WFI();                                              // Put the SAMD21 into deep sleep, Zzzzzzzz...
+  SysTick->CTRL |= SysTick_CTRL_TICKINT_Msk;            // Enable SysTick interrupts
 }

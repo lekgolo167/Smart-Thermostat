@@ -125,8 +125,7 @@ void Thermostat::update_cycle()
 
 			global_msg_queue->push(SEND_SERVER_STATS);
 		}
-		// temporary solution to keep rtc time correct as it loses 24 minutes per day
-		global_msg_queue->push(GET_EPOCH);
+		
 		if(!m_initialized_from_server)
 		{
 			global_msg_queue->push(UPDATE_SCHEDULE);

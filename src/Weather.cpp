@@ -960,11 +960,11 @@ void Weather::get_weather(Messenger& messenger, int today)
 	char buffer[1024];
 
 	int result = messenger.get_request(URL_GET_FORECAST, buffer, 1024);
+	current_day = today; // if the request failed, still update so thermostat doesn't ask for updates every minute.
 	if (result < 1) {
 		// request failed
 		return;
 	}
-	current_day = today;
 	
 	JSON_Value* raw = json_parse_string(buffer);
 	JSON_Object* obj = json_value_get_object(raw);

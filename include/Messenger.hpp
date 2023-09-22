@@ -35,6 +35,7 @@ private:
 	IPAddress m_remoteIP;
 	String m_server_str;
 	bool m_server_found;
+	bool m_wifi_enabled;
 
 	// Local connection
 	IPAddress m_localIP;
@@ -59,7 +60,8 @@ public:
 	bool wifi_connected();
 	const char* get_ssid();
 	IPAddress& get_localIP();
-	int connect_to_wifi(int tries);
+	uint8_t connect_to_wifi(int tries);
+	uint8_t auto_reconnect_wifi();
 	void disconnect_wifi();
 	bool post_request(const char *path, const char *msg, int len);
 	bool post_request(const char *path, const char *msg, int len, uint16_t port);

@@ -3,6 +3,7 @@
 Messenger::Messenger(/* args */)
 {
 	m_server_found = false;
+	m_wifi_enabled = true;
 	m_wifi_connection_status = WL_DISCONNECTED;
 	m_server_str = "Unknown";
 	m_ssid = "Unknown";
@@ -18,8 +19,9 @@ void Messenger::initialize() {
 	m_udp_hb.begin(LOCAL_HB_PORT);
 }
 
-int Messenger::connect_to_wifi(int tries)
+uint8_t Messenger::connect_to_wifi(int tries)
 {
+	m_wifi_enabled = true;
 	m_wifi_connection_status = WiFi.status();
 	while (m_wifi_connection_status != WL_CONNECTED && tries-- > 0) {
 		m_wifi_connection_status = WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
@@ -35,8 +37,19 @@ int Messenger::connect_to_wifi(int tries)
 	return m_wifi_connection_status;
 }
 
+uint8_t Messenger::auto_reconnect_wifi()
+{
+	if (!m_wifi_enabled)
+		return m_wifi_connection_status;
+	m_wifi_connection_status = WiFi.status();
+	if (m_wifi_connection_status != WL_DISCONNECTED && m_wifi_connection_status != WL_CONNECTION_LOST)
+		return m_wifi_connection_status;
+	return connect_to_wifi(1);
+}
+
 void Messenger::disconnect_wifi()
 {
+	m_wifi_enabled = false;
 	m_wifi_connection_status = WiFi.disconnect();
 	m_server_str = "Unknown";
 	m_server_found = false;
